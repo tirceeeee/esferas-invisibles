@@ -14,5 +14,29 @@ export function common(a,b){const right=new Set(concepts(b));return concepts(a).
 export function opacity(count){return Math.max(.01,Math.min(count/8,1));}
 export function memory(answers){const counts={directa:0,parcial:0,mediada:0};if(answers.length!==4||answers.some(v=>!Object.hasOwn(counts,v)))return null;answers.forEach(v=>counts[v]+=25);return counts;}
 export function classifyAnswer(lived,recall){if(lived==='no')return 'mediada';if(lived!=='si')return 'pendiente';if(recall==='claro')return 'directa';if(recall==='parcial')return 'parcial';return 'pendiente';}
-const packs=[['VHS','casete','radio','Michael Jackson','cine','vinilo','televisión','walkman'],['teléfono móvil','internet','radio','cine','fotografía','ordenador','televisión','VHS'],['internet','redes sociales','videojuegos','teléfono móvil','streaming','fotografía','cine','música']];
-export function demoParticipant(index){const g=generations[index%5],p=concepts(packs[index%3]);return {id:`R-${String(index+1).padStart(3,'0')}`,generation:g.id,keywords:p,events:['Llegada de internet a casa','Transformación de las formas de comunicarnos'],capsule:p.slice(0,5),answers:g.id==='millennial'?['mediada','parcial','directa','directa']:g.id==='gen_z'?['mediada','mediada','parcial','directa']:['directa','directa','directa','directa'],synthetic:true};}
+export const periodIds=['p80','p90','p00','p10'];
+export const views=[{id:'general',label:'General',range:'Todos los periodos'},...periodIds.map((id,i)=>({id,label:['Años 80','Años 90','Años 2000','Años 2010'][i],range:periods[i]}))];
+export function participantView(participant,view='general') {
+ if(!views.some(v=>v.id===view))throw new RangeError('Periodo desconocido');
+ const records=participant.periodData||{};
+ if(view!=='general') { const data=records[view];return {keywords:data?.keywords||[],events:data?.events||[],capsule:data?.capsule||[],memory:data?.memory||'pendiente'}; }
+ const rows=periodIds.map(id=>records[id]);
+ return {keywords:concepts(rows.flatMap(r=>r?.keywords||[])),events:[...new Set(rows.flatMap(r=>r?.events||[]))],capsule:participant.capsule||[],memory:memory(rows.map(r=>r?.memory||'pendiente'))};
+}
+export function networkFor(participants,view='general') {
+ const nodes=participants.map(p=>({id:p.id,data:participantView(p,view)})),edges=[];
+ for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const shared=common(nodes[i].data.keywords,nodes[j].data.keywords);edges.push({a:nodes[i].id,b:nodes[j].id,count:shared.length,opacity:opacity(shared.length)});}
+ return {nodes,edges};
+}
+const decadePacks=[
+ ['VHS','casete','radio','Michael Jackson','cine','vinilo','televisión','walkman'],
+ ['CD','internet','radio','Nirvana','fotografía','ordenador','televisión','teléfono móvil'],
+ ['DVD','internet','videojuegos','teléfono móvil','Tuenti','cámara digital','MP3','blogs'],
+ ['streaming','redes sociales','videojuegos','smartphone','Netflix','fotografía','podcasts','Spotify']
+];
+const decadeEvents=[['La caída del Muro de Berlín','La movida madrileña'],['Internet empieza a llegar a los hogares','Nuevas formas de comunicación móvil'],['La expansión de las redes sociales','La fotografía se vuelve digital'],['La vida cotidiana conectada','El confinamiento de 2020']];
+export function demoParticipant(index){
+ const g=generations[index%5],answers=g.id==='millennial'?['mediada','parcial','directa','directa']:g.id==='gen_z'?['mediada','mediada','parcial','directa']:['directa','directa','directa','directa'];
+ const periodData=Object.fromEntries(periodIds.map((id,i)=>{const keywords=concepts(decadePacks[i].filter((_,j)=>(j+index+i)%3!==0));return [id,{keywords,events:[decadeEvents[i][index%2]],capsule:keywords.slice(0,3),memory:answers[i]}];}));
+ return {id:`R-${String(index+1).padStart(3,'0')}`,generation:g.id,periodData,capsule:periodIds.map(id=>periodData[id].capsule[0]),synthetic:true};
+}

@@ -55,7 +55,7 @@ Pendiente: revisión de la metodología, importación privada de entrevistas, s�
 
 ### Flotación y ondas por periodo
 
-Las esferas flotan libremente con direcciones aleatorias suavizadas, resistencia viscosa, separación entre participantes y límites suaves. No se pueden arrastrar; el clic abre su información. Las afinidades por keywords ejercen una atracción débil y la red se reorganiza al incorporar una cápsula, conservando las posiciones existentes. La simulación avanza en pasos de 1/60 s. La física está en `dist/flotation.mjs`.
+Las esferas permanecen en su sitio con una oscilación lenta inferior a dos píxeles del lienzo, sin desplazamiento acumulado. Cada ciclo dura entre 20 y 32 segundos y cada esfera tiene su propia fase. No se pueden arrastrar; el clic abre su información. La animación está en `dist/flotation.mjs`.
 
 Se conservan los tamaños anteriores. La generación silenciosa tiene núcleo negro; Boomers, X y Millennials tienen centros blancos progresivamente mayores; Z tiene núcleo blanco. Las proporciones están en `dist/scene.mjs`.
 

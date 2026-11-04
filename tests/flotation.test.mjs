@@ -9,25 +9,25 @@ test('formas por generación respetan la progresión negra a blanca y mantienen 
  assert.deepEqual(Object.values(sphereStyles).map(s=>s.whiteRatio),[0,.16,.32,.55,1]);
  assert.equal(sphereStyles.silent.width,127.99);assert.equal(sphereStyles.gen_z.width,47.8);
 });
-test('la flotación recorre espacio sin anclajes, tiene velocidad acotada y permanece dentro del lienzo',()=>{
+test('la oscilación permanece a menos de dos píxeles de su sitio durante diez minutos',()=>{
  const random=seeded(),people=Array.from({length:20},(_,i)=>demoParticipant(i)),edges=networkFor(people).edges;
  const nodes=new Map(people.map((p,i)=>[p.id,initializeDrift(initialPosition(i),random)]));
  const original=[...nodes.values()].map(p=>({...p}));let maxTravel=0;
- for(let t=0;t<3600;t++){
+ for(let t=0;t<36000;t++){
   stepFlotation(nodes,edges,random);
-  [...nodes.values()].forEach((p,i)=>{assert.ok(Number.isFinite(p.x+p.y));assert.ok(p.x>=70&&p.x<=1450&&p.y>=105&&p.y<=800);assert.ok(Math.hypot(p.vx,p.vy)<=.12001);maxTravel=Math.max(maxTravel,Math.hypot(p.x-original[i].x,p.y-original[i].y));});
+  [...nodes.values()].forEach((p,i)=>{assert.ok(Number.isFinite(p.x+p.y));assert.ok(p.x>=70&&p.x<=1450&&p.y>=105&&p.y<=800);assert.ok(Math.hypot(p.vx,p.vy)<=.006);maxTravel=Math.max(maxTravel,Math.hypot(p.x-original[i].x,p.y-original[i].y));});
  }
- assert.ok(maxTravel>20);
+ assert.ok(maxTravel>.2 && maxTravel<2);
  assert.ok(Math.max(...original.map(p=>p.x))-Math.min(...original.map(p=>p.x))>900);
 });
-test('añadir un participante reequilibra las fuerzas de la red sin teletransportar los existentes',()=>{
+test('añadir un participante mantiene el sitio de las esferas existentes',()=>{
  const random=seeded(),people=[demoParticipant(0),demoParticipant(1)],edges=networkFor(people).edges;
  const nodes=new Map([[people[0].id,initializeDrift({x:500,y:400},random)]]);
  const before={...nodes.get(people[0].id)};
  nodes.set(people[1].id,initializeDrift({x:500,y:400},random));
  stepFlotation(nodes,edges,random);
  const a=nodes.get(people[0].id),b=nodes.get(people[1].id);
- assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>0);assert.ok(Math.hypot(a.x-before.x,a.y-before.y)<=.121);
+ assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>0);assert.ok(Math.hypot(a.x-before.x,a.y-before.y)<=.006);
 });
 test('ondas sintéticas por década evolucionan y General mezcla las cuatro señales',()=>{
  const ids=['p80','p90','p00','p10'];

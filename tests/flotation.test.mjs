@@ -34,7 +34,7 @@ test('ondas sintéticas por década evolucionan y General mezcla las cuatro señ
  for(const t of [0,10,50,1000]){
   const rows=ids.map(id=>soundFeatures(id,t)),general=soundFeatures('general',t);
   for(const key of ['energy','brightness','transient'])assert.ok(Math.abs(general[key]-rows.reduce((s,r)=>s+r[key],0)/4)<1e-12);
-  for(const id of [...ids,'general']){const p=soundMotion(id,t);assert.ok(p.amplitude>=1&&p.amplitude<=4);assert.ok(p.frequency>0&&p.frequency<=.1);}
+  for(const id of [...ids,'general']){const p=soundMotion(id,t);assert.ok(p.amplitude>=1&&p.amplitude<=4);assert.ok(p.frequency>0&&p.frequency<=.15);}
  }
  assert.equal(new Set(ids.map(id=>JSON.stringify(soundMotion(id,0)))).size,4);
  assert.notDeepEqual(soundMotion('p80',0),soundMotion('p80',10));

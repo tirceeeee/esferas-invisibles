@@ -26,7 +26,9 @@ La configuración está preparada; la vinculación a un proyecto de Vercel debe 
 ### Archivos principales
 
 - `dist/index.html`: estructura de la interfaz.
-- `dist/styles.css`: diseño adaptable.
+- `dist/styles.css`: diseño adaptable basado en Figma, con fuentes locales.
+- `dist/scene.mjs`: posiciones y tamaños de sprites, destino del zoom.
+- `dist/assets/figma/`: imagen y SVG originales de las esferas.
 - `dist/app.mjs`: mapa, selección, filtros y formulario.
 - `dist/domain.mjs`: generaciones, memoria, conceptos y datos ficticios.
 - `dist/assets/sprites/`: carpeta para los sprites definitivos. Asignar su ruta en la propiedad `sprite` de cada generación en `domain.mjs`.
@@ -48,12 +50,22 @@ Los datos por periodo viven en `periodData.p80`, `p90`, `p00` y `p10`, con `keyw
 
 Las barras agregadas de memoria aparecen en General; una década concreta muestra únicamente la categoría estimada de ese periodo o el estado pendiente. El formulario de demostración recoge datos por década y una cápsula final general por separado.
 
-Pendiente: sprites definitivos, revisión de la metodología, importación privada de entrevistas, síntesis anónimas y persistencia. La revisión visual automatizada del primer prototipo sigue pendiente.
+Pendiente: validar la asignación definitiva de variantes visuales a generaciones, revisión de la metodología, importación privada de entrevistas, síntesis anónimas y persistencia.
 
 ### Flotación y ondas por periodo
 
-La red usa resortes suaves, repulsión, resistencia viscosa y una corriente continua. La simulación avanza en pasos de 1/60 s para mantener el ritmo entre pantallas. Las conexiones son curvas con extremos anclados y fases propias por pareja; su opacidad conserva exclusivamente el significado de coincidencias.
+La red usa anclajes elásticos suaves, resistencia viscosa y una corriente continua. Los anclajes conservan la composición del diseño y se recolocan al arrastrar una esfera. La simulación avanza en pasos de 1/60 s para mantener el ritmo entre pantallas. Las conexiones son curvas con extremos anclados y fases propias por pareja; su opacidad conserva exclusivamente el significado de coincidencias.
 
 Perfiles artísticos ajustables en dist/motion.mjs: General intermedio (0,16 Hz), 80 amplio y lento (0,11 Hz), 90 rítmico (0,19 Hz), 2000 corto (0,27 Hz), 2010 fino (0,35 Hz). Las transiciones se interpolan sin reiniciar posiciones ni fase. No representan mediciones históricas.
 
 Pausar detiene tanto bolitas como ondas. La preferencia de movimiento reducido inicia la vista quieta, con reanudación voluntaria. Las pestañas ocultas no acumulan tiempo de simulación.
+
+### Diseño de Figma implementado
+
+Referencia: archivo ArAzhz00jvvWEXyKhpG2Uu, frames 1:2 (red) y 1:70 (detalle). Se han leído sus capas y propiedades con la integración de Figma. Interfaz blanca, Cutive Mono y Fira Mono locales, filtros inferiores a la izquierda y botones superiores. La captura del navegador que encabeza los frames no forma parte de la aplicación.
+
+Se reutilizan sphere.png y los cuatro SVG de núcleos descargados de Figma, sin modificar los archivos. La imagen se compone con mezcla exclusion y conserva su proporción original. Las conexiones y esferas son instancias dinámicas de los datos: el esquema estático de hilos de Figma se expresa como curvas animadas, conservando todas las parejas y el cálculo de opacidad. Las variantes mantienen tamaños diferentes por generación; la asignación artística puede revisarse.
+
+Al abrir una esfera, se amplía suavemente hacia la zona izquierda y se ocultan las demás esferas y conexiones, también para navegación con teclado. La ficha a la derecha conserva todos los datos, con desplazamiento interno cuando no caben. Cambiar de década actualiza la misma ficha. Volver a la red o Esc recupera las posiciones, el foco y el filtro. En móvil la ficha pasa debajo de la esfera. Movimiento reducido desactiva las transiciones y comienza con ondas pausadas.
+
+Validación: apertura y regreso, filtro exclusivo 80/90 con el mismo participante, 20 nodos al regresar, vista estrecha sin desbordamiento horizontal y pruebas de dominio/movimiento.

@@ -18,5 +18,7 @@ export function soundFeatures(view,time){
 }
 export function soundMotion(view,time){
  const signal=soundFeatures(view,time);
- return {amplitude:1+signal.energy*3,frequency:.04+signal.brightness*.075+signal.transient*.035,waves:.7+signal.brightness*1.1,drift:.018};
+ // Distinct, subtle signatures: broad swell, rhythmic wave, short ripple, fine vibration.
+ const shape={general:[1.8,.075,1.6],p80:[2.3,.045,.8],p90:[2,.075,1.35],p00:[1.6,.105,2.1],p10:[1.2,.13,2.8]}[view];
+ return {amplitude:shape[0]+signal.energy*.6,frequency:shape[1]+signal.transient*.02,waves:shape[2]+signal.brightness*.1,drift:.018};
 }

@@ -37,7 +37,7 @@ La configuración está preparada; la vinculación a un proyecto de Vercel debe 
 
 ### Estado del prototipo
 
-Incluye 20 participantes ficticios. Se pueden incorporar nuevos nodos de demostración durante la sesión; desaparecen al recargar. No hay base de datos ni entrevistas reales publicadas.
+Incluye 8 síntesis anónimas de entrevistas de Madrid y 4 participantes ficticios coherentes, identificados con IDs R y D y una etiqueta de origen en la ficha. Las nuevas respuestas del cuestionario siguen siendo una demostración de sesión: desaparecen al recargar. No hay base de datos ni envío automático a Drive.
 
 Se estudian cuatro periodos: 1980–1989, 1990–1999, 2000–2009 y 2010–2020 incluido. Cada uno pesa un 25 % en la estimación de memoria. Las respuestas orientan las categorías; los casos insuficientes quedan pendientes de revisión. La correspondencia automática inicial debe validarse con la investigación antes de utilizar datos reales.
 
@@ -51,7 +51,7 @@ Los datos por periodo viven en `periodData.p80`, `p90`, `p00` y `p10`, con `keyw
 
 Las barras agregadas de memoria aparecen en General; una década concreta muestra únicamente la categoría estimada de ese periodo o el estado pendiente. El formulario de demostración recoge datos por década y una cápsula final general por separado.
 
-Pendiente: revisión de la metodología, importación privada de entrevistas, síntesis anónimas y persistencia.
+Pendiente: revisión editorial de las síntesis y estimaciones de memoria, sprites oficiales y persistencia de nuevas respuestas.
 
 ### Flotación y ondas por periodo
 
@@ -61,32 +61,18 @@ Se conservan los tamaños anteriores. La generación silenciosa tiene núcleo ne
 
 `dist/sound-motion.mjs` produce envolventes sintéticas: energía para amplitud, brillo para densidad de ondas y pulsos para ritmo. Cada década tiene un perfil y General combina los cuatro. Son decisiones artísticas, no mediciones históricas. No se reproduce audio. La opacidad sigue dependiendo exclusivamente de los conceptos compartidos. Las líneas se dibujan en una sola capa Canvas con cálculos de ondas compartidos.
 
-### Grabación candidata
+### Entrevistas y cuestionario (4 de noviembre de 2026)
 
-[Calles de Toronto, verano de 1995, por TRP](https://freesound.org/people/TRP/sounds/567324/): grabación en casete con tráfico, voces y música de coches, según su autor. Duración 4:23; licencia CC0 indicada en la ficha. Publicada en 2021, grabada en 1995 según el autor. La descarga requiere iniciar sesión. Consultada el 4 de noviembre de 2026.
+Se leyeron los ocho PDF facilitados en la carpeta de entrevistas. Solo se incluyen síntesis culturales: no se publican los PDF, nombres, ocupaciones, edades exactas, enlaces privados ni detalles personales identificables. Los IDs no codifican datos personales. El archivo conserva asociaciones subjetivas en el periodo en el que se expresaron, incluso si hay solapamientos cronológicos. No se presentan como hechos históricos.
 
-No está descargada ni integrada. Es una referencia localizada, no una representación de toda la década ni del contexto español. Faltan fuentes validadas para los otros tres periodos. Una futura integración puede extraer energía RMS, centroide espectral y transitorios previamente y guardar series pequeñas para animar las líneas sin decodificar audio en cada fotograma.
+La clasificación generacional sigue los rangos acordados y el año de nacimiento de la fuente, no el nombre del PDF. No hay testimonios reales de Baby Boomers ni Millennials en este lote; sus nodos están identificados como ficticios. Las clasificaciones mixtas de recuerdos de infancia se sintetizan como parciales, con nota visible de estimación revisable. La cápsula general conserva los elementos expresados, aunque una entrevista haya dado más de cinco. Las preguntas sin una selección explícita no se completan inventando respuestas.
 
-Pausar detiene tanto bolitas como ondas. La preferencia de movimiento reducido inicia la vista quieta, con reanudación voluntaria. Las pestañas ocultas no acumulan tiempo de simulación.
+- `dist/interviews.mjs`: ocho síntesis anónimas y keywords revisadas manualmente.
+- `dist/participants.mjs`: composición inicial y cuatro ejemplos ficticios contextualizados en Madrid.
+- `dist/questionnaire.mjs`: esquema compartido entre preguntas y ficha, y validación de respuestas.
 
-### Diseño de Figma implementado
+El cuestionario recoge relación y origen de memoria, primera asociación, sensación, cultura, objetos, acontecimientos, mirada actual, cápsula, tres imprescindibles, elección única y comparación general. Cada respuesta va a la ficha de su periodo; las comparaciones y la cápsula final aparecen en General. Las keywords se resumen explícitamente por el participante: no hay extracción semántica automática de texto libre. No se infieren conceptos a partir de respuestas negativas.
 
-Referencia: archivo ArAzhz00jvvWEXyKhpG2Uu, frames 1:2 (red) y 1:70 (detalle). Se han leído sus capas y propiedades con la integración de Figma. Interfaz blanca, Cutive Mono y Fira Mono locales, filtros inferiores a la izquierda y botones superiores. La captura del navegador que encabeza los frames no forma parte de la aplicación.
+Las ondas siguen siendo un prototipo sintético: 80 amplio y pausado; 90 rítmico; 2000 más corto; 2010 fino; General intermedio. La amplitud sigue siendo pequeña y la capa completa conserva un desenfoque leve. No se han integrado grabaciones. Las futuras fuentes sonoras deben corresponder a Madrid, España, dentro de 1980–2020; la referencia anterior a Toronto queda descartada.
 
-Se reutilizan sphere.png y los cuatro SVG de núcleos descargados de Figma, sin modificar los archivos. La imagen se compone con mezcla exclusion y conserva su proporción original. Las conexiones y esferas son instancias dinámicas de los datos: el esquema estático de hilos de Figma se expresa como curvas animadas, conservando todas las parejas y el cálculo de opacidad. Las variantes mantienen tamaños diferentes por generación; la asignación artística puede revisarse.
-
-Al abrir una esfera, se amplía suavemente hacia la zona izquierda y se ocultan las demás esferas y conexiones, también para navegación con teclado. La ficha a la derecha conserva todos los datos, con desplazamiento interno cuando no caben. Cambiar de década actualiza la misma ficha. Volver a la red o Esc recupera las posiciones, el foco y el filtro. En móvil la ficha pasa debajo de la esfera. Movimiento reducido desactiva las transiciones y comienza con ondas pausadas.
-
-Validación: apertura y regreso, filtro exclusivo 80/90 con el mismo participante, 20 nodos al regresar, vista estrecha sin desbordamiento horizontal y pruebas de dominio/movimiento.
-
-### Opacidad y rendimiento
-
-Se ha contrastado la regla con la biblia: opacidad = max(0,01, min(coincidencias / 8, 1)). General compara conceptos únicos de las cuatro épocas, sin duplicar un concepto repetido entre décadas. Cada década compara únicamente sus respuestas. La red conserva todas las parejas. Cada conexión devuelve también sus keywords compartidas para poder verificar su recuento.
-
-Los anteriores ejemplos ficticios producían entre 9 y 21 coincidencias en General: las 190 conexiones alcanzaban 100 %. Se han diversificado los ejemplos sin modificar la regla ni datos reales. La demostración incluye ahora 0, 4 y 8 o más coincidencias.
-
-Los hilos se dibujan en una sola capa Canvas, con globalAlpha igual a la opacidad calculada. Se eliminan 190 filtros SVG, las cadenas de trazado por fotograma y la actualización continua de atributos de accesibilidad. Las ondas reutilizan buffers numéricos y cálculos trigonométricos compartidos; los extremos siguen las posiciones efectivamente dibujadas de las esferas. Canvas limita la densidad a 2x y se reajusta al tamaño del mapa.
-
-La animación deja de solicitar fotogramas al estabilizarse el zoom de detalle, al pausar y al ocultarse la pestaña; vuelve con las interacciones correspondientes. Los diálogos suspenden la flotación mientras están abiertos.
-
-Validación: 12 pruebas, incluyendo equivalencia geométrica con las ondas originales, opacidad exacta de Canvas, deduplicación global y variedad de la demostración. Ensayo local de 600 fotogramas y 190 curvas: cálculo antiguo 2238 ms, nuevo 39 ms. Es una medición de CPU geométrica con contexto de dibujo simulado, no una medición de FPS ni del coste total de renderizado.
+La selección oculta inmediatamente los otros grupos SVG, evitando el artefacto de composición de la transición de opacidad con la imagen en modo exclusion. No se han editado los sprites. Las fichas se centran en el área derecha, con altura según contenido limitada al espacio disponible; en móvil se centran bajo la esfera. Los elementos internos se ajustan al texto y se centran horizontalmente.

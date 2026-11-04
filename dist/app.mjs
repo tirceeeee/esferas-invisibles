@@ -1,12 +1,14 @@
+import {initialParticipants} from './participants.mjs';
+import {periodQuestions,generalQuestions,participantFromForm} from './questionnaire.mjs';
 import {initializeDrift,stepFlotation} from './flotation.mjs';
 import {soundMotion} from './sound-motion.mjs';
 import {createConnectionLayer} from './connections.mjs';
-import {generations,periods,generationFor,concepts,classifyAnswer,demoParticipant,periodIds,views,participantView,networkFor} from './domain.mjs';
+import {generations,periods,views,participantView,networkFor} from './domain.mjs';
 import {linePhase} from './motion.mjs';
 import {sphereStyles,initialPosition,focusTarget} from './scene.mjs';
 const $=s=>document.querySelector(s),svgNS='http://www.w3.org/2000/svg';
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)'),mobile=matchMedia('(max-width:700px)');
-let participants=Array.from({length:20},(_,i)=>demoParticipant(i)),activeView='general',selected=null,paused=reducedMotion.matches,visible=participants,links=[];
+let participants=structuredClone(initialParticipants),activeView='general',selected=null,paused=reducedMotion.matches,visible=participants,links=[];
 let motion=soundMotion('general',0),waveClock=0,flowClock=0,lastFrame=null,accumulator=0;
 let frame=null,sceneDirty=true;
 const connectionLayer=createConnectionLayer($('#connections'));
@@ -22,10 +24,10 @@ const filterNames={p80:'década 80',p90:'década 90',p00:'década 00',p10:'déca
  label.append(input,text('span',filterNames[view.id]));$('#filters').append(label);
 });
 function render(){
- visible=participants;$('#count').textContent=visible.length+' memorias ficticias · '+views.find(v=>v.id===activeView).label;$('#empty').hidden=visible.length>0;
+ visible=participants;$('#count').textContent=visible.filter(p=>!p.synthetic).length+' entrevistas · '+visible.filter(p=>p.synthetic).length+' ejemplos · '+views.find(v=>v.id===activeView).label;$('#empty').hidden=visible.length>0;
  const select=$('#participant-select');select.replaceChildren(new Option('Selecciona una memoria',''));
  for(const [i,p] of visible.entries()){
-  select.add(new Option(p.id+' · '+gen(p).label,p.id));
+  select.add(new Option(p.id+' · '+gen(p).label+(p.synthetic?' · Ficticia':' · Entrevista'),p.id));
   if(nodeElements.has(p.id))continue;
   const anchor=initialPosition(i,visible.length);positions.set(p.id,initializeDrift({...anchor,radius:sphereStyles[p.generation].width*.1}));displayPositions.set(p.id,{...anchor,scale:1});
   const style=sphereStyles[p.generation],node=element('g',{class:'node',tabindex:0,role:'button','aria-label':'Abrir '+p.id+', '+gen(p).label});node.dataset.id=p.id;
@@ -43,7 +45,7 @@ function render(){
 }
 function syncSelection(){
  for(const p of visible){const node=nodeElements.get(p.id),hidden=!!selected&&selected!==p.id;
-  node.classList.toggle('selected',selected===p.id);node.setAttribute('tabindex',hidden?'-1':'0');node.setAttribute('aria-hidden',String(hidden));
+  node.classList.toggle('selected',selected===p.id);node.style.visibility=hidden?'hidden':'visible';node.setAttribute('tabindex',hidden?'-1':'0');node.setAttribute('aria-hidden',String(hidden));
  }
 }
 function paint(blend){
@@ -84,19 +86,24 @@ function showDetail(id,moveFocus=true){
  $('#experience').classList.add('is-detail');$('.site-header').inert=true;$('#back').hidden=false;$('#participant-select').value=id;
  const data=participantView(p,activeView),view=views.find(v=>v.id===activeView),root=$('#details');root.hidden=false;root.replaceChildren();
  const top=text('div','','detail-top'),title=text('h2',p.id);title.id='detail-title';const close=text('button','×');close.setAttribute('aria-label','Volver a la red');close.onclick=closeDetail;top.append(title,close);
- root.append(top,text('p',gen(p).label,'generation-tag'),text('p',view.label+' · '+view.range,'view-tag'),text('h3','Referentes culturales'));
+ root.append(top,text('p',gen(p).label,'generation-tag'),text('p',(p.synthetic?'Ejemplo ficticio':'Entrevista · síntesis anónima')+' · Madrid','record-origin'),text('p',view.label+' · '+view.range,'view-tag'),text('h3','Referentes culturales · keywords'));
  const chips=text('div','','chips');data.keywords.forEach(k=>chips.append(text('span',k,'chip')));root.append(chips);
  if(!data.keywords.length)root.append(text('p','Sin referentes registrados para este periodo.','muted'));
- root.append(text('h3','Acontecimientos y cambios sociales'));const events=text('ul','','events');data.events.forEach(e=>events.append(text('li',e,'event')));root.append(events);
- if(!data.events.length)root.append(text('p','Sin información registrada para este periodo.','muted'));
- root.append(text('h3','Su cápsula cultural'),text('p',data.capsule.length?data.capsule.join(', '):'Sin información registrada para este periodo.','capsule'));
+ const section=(title,value)=>{if(!value||(Array.isArray(value)&&!value.length))return;root.append(text('h3',title));if(Array.isArray(value)){const ul=text('ul','','events');value.forEach(v=>ul.append(text('li',v,'event')));root.append(ul);}else root.append(text('p',value,'capsule'));};
+ if(activeView==='general'){
+  section('Acontecimientos y cambios sociales',data.events);section('Su cápsula cultural general',data.capsule);
+  for(const q of generalQuestions)section(q.title,p.general?.[q.key]);
+ }else{
+  for(const q of periodQuestions)section(q.title,data[q.key]);
+  if(!data.capsule.length)root.append(text('p',data.capsuleNote||'Sin cápsula registrada para este periodo.','muted'));
+ }
  const panel=text('section','','memory-section');panel.append(text('h3',activeView==='general'?'Relación memoria estimada':'Memoria · '+view.range));
  if(activeView==='general'&&data.memory){for(const key of ['directa','parcial','mediada']){
   const row=text('div','','memory-row'),bar=text('div','','bar');row.append(text('span','Memoria '+key));
   bar.setAttribute('role','meter');bar.setAttribute('aria-label','Memoria '+key+' estimada');bar.setAttribute('aria-valuemin','0');bar.setAttribute('aria-valuemax','100');bar.setAttribute('aria-valuenow',data.memory[key]);
   const fill=text('span','');fill.style.width=data.memory[key]+'%';bar.append(fill,text('small','≈'+data.memory[key]+'%','bar-value'));row.append(bar);panel.append(row);
  }}else panel.append(text('p',activeView==='general'||data.memory==='pendiente'?'Pendiente de revisión':'Memoria '+data.memory,'period-memory'));
- panel.append(text('p',activeView==='general'?'Estimación según las respuestas · 25 % por periodo. Datos ficticios.':'Relación según las respuestas de esta época. Datos ficticios.','memory-note'));root.append(panel);root.setAttribute('aria-labelledby','detail-title');
+ panel.append(text('p',(activeView==='general'?'Estimación según las respuestas · 25 % por periodo.':'Relación según las respuestas de esta época.')+(p.synthetic?' Ejemplo ficticio.':' Síntesis de entrevista; asociaciones personales, no cronología histórica.'),'memory-note'));if(activeView!=='general'&&data.memoryEvidence)panel.append(text('p',data.memoryEvidence,'memory-note'));root.append(panel);root.setAttribute('aria-labelledby','detail-title');
  if(opening)root.scrollTop=0;if(moveFocus&&opening)$('#back').focus({preventScroll:true});paint(reducedMotion.matches?1:0);
 }
 $('#back').onclick=closeDetail;$('#home').onclick=e=>{e.preventDefault();if(selected)closeDetail();};
@@ -106,14 +113,23 @@ for(const button of document.querySelectorAll('[data-close]'))button.onclick=()=
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&selected&&!document.querySelector('dialog[open]'))closeDetail();});
 function pauseLabel(){$('#pause').textContent=paused?'▷':'Ⅱ';$('#pause').setAttribute('aria-label',paused?'Reanudar movimiento':'Pausar movimiento');}$('#pause').onclick=()=>{paused=!paused;pauseLabel();wake();};pauseLabel();
 reducedMotion.addEventListener('change',e=>{if(e.matches){paused=true;pauseLabel();paint(1);}});
-periods.forEach((period,i)=>{const row=text('div','','period-row');row.append(text('strong',period));const lived=document.createElement('label');lived.append(document.createTextNode('¿La viviste?'));const ls=document.createElement('select');ls.name=`lived${i}`;ls.required=true;[['','Selecciona'],['si','Sí'],['no','No']].forEach(([v,l])=>ls.add(new Option(l,v)));lived.append(ls);const recall=document.createElement('label');recall.append(document.createTextNode('¿Cómo la recuerdas?'));const rs=document.createElement('select');rs.name=`recall${i}`;[['','Selecciona'],['claro','Con recuerdos propios claros'],['parcial','Con recuerdos parciales'],['no','No la recuerdo / no lo sé']].forEach(([v,l])=>rs.add(new Option(l,v)));rs.required=true;ls.onchange=()=>{rs.disabled=ls.value==='no';rs.required=!rs.disabled;};recall.append(rs);row.append(lived,recall);
- for(const [key,title,placeholder] of [['keywords','Referentes de esta época','Conceptos separados por comas'],['events','Acontecimientos de esta época','Acontecimientos separados por punto y coma'],['capsule','Cápsula de esta época','Elementos separados por comas']]){const field=text('label',title,'period-content');const input=document.createElement('input');input.name=key+i;input.maxLength=300;input.placeholder=placeholder;field.append(input);row.append(field);}
- $('#period-fields').append(row);});
+function addQuestion(container,q,name){
+ const label=text('label',q.question,'period-content'),input=document.createElement('textarea');input.name=name;input.rows=2;input.maxLength=1200;if(q.list)input.placeholder='Separa los elementos con punto y coma o en líneas distintas';label.append(input);container.append(label);
+}
+periods.forEach((period,i)=>{
+ const row=document.createElement('fieldset');row.className='period-row';row.append(text('legend',period));
+ for(const [key,label,options] of [['lived','¿Viviste esta época?',[['','Selecciona'],['si','Sí'],['no','No']]],['recall','¿Cómo la recuerdas?',[['','Selecciona'],['claro','Con recuerdos propios claros'],['parcial','Con recuerdos propios parciales'],['no','No la recuerdo / no lo sé']]]]){
+  const field=text('label',label),select=document.createElement('select');select.name=key+i;select.required=true;options.forEach(([v,l])=>select.add(new Option(l,v)));field.append(select);row.append(field);
+ }
+ const lived=row.querySelector('[name="lived'+i+'"]'),recall=row.querySelector('[name="recall'+i+'"]');lived.onchange=()=>{recall.disabled=lived.value==='no';recall.required=!recall.disabled;};
+ for(const q of periodQuestions)addQuestion(row,q,q.key+i);
+ addQuestion(row,{question:'Resume tus referentes en hasta 12 keywords (nombres, objetos o conceptos separados por comas). Son las que compararemos con otras memorias.'},'keywords'+i);
+ $('#period-fields').append(row);
+});
+for(const q of generalQuestions)addQuestion($('#general-fields'),q,q.key);
 $('#add-form').elements.year.max=new Date().getFullYear();$('#open-add').onclick=()=>$('#add-dialog').showModal();$('#close-add').onclick=()=>$('#add-dialog').close();$('#add-form').onsubmit=e=>{
- e.preventDefault();const form=new FormData(e.target),g=generationFor(Number(form.get('year')));
- const split=(name,separator=',')=>String(form.get(name)||'').split(separator).map(x=>x.trim()).filter(Boolean);
- const capsule=split('capsule'),periodData=Object.fromEntries(periodIds.map((id,i)=>[id,{keywords:concepts(split('keywords'+i)),events:split('events'+i,';'),capsule:split('capsule'+i),memory:classifyAnswer(form.get('lived'+i),form.get('recall'+i))}]));
- if(!g||!capsule.length||Object.values(periodData).some(d=>d.keywords.length>12)){$('#form-error').textContent='Comprueba el año, la cápsula general y el máximo de 12 referentes por periodo.';return;}
- const p={id:'R-'+String(participants.length+1).padStart(3,'0'),generation:g.id,periodData,capsule,synthetic:true};participants.push(p);render();if(selected)closeDetail();$('#add-dialog').close();sceneDirty=true;wake();e.target.reset();e.target.querySelectorAll('select').forEach(s=>{s.disabled=false;s.required=true;});$('#form-error').textContent='';$('#announcement').textContent='Memoria '+p.id+' incorporada a la red.';
+ e.preventDefault();let p;
+ try{p=participantFromForm(new FormData(e.target),'D-'+String(participants.filter(p=>p.synthetic).length+1).padStart(3,'0'));}catch(error){$('#form-error').textContent=error.message;return;}
+ participants.push(p);render();if(selected)closeDetail();$('#add-dialog').close();sceneDirty=true;wake();e.target.reset();e.target.querySelectorAll('select').forEach(s=>{s.disabled=false;s.required=true;});$('#form-error').textContent='';$('#announcement').textContent='Memoria '+p.id+' incorporada a la red.';
 };
 render();resizeScene();wake();

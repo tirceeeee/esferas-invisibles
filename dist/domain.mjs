@@ -19,7 +19,7 @@ export const views=[{id:'general',label:'General',range:'Todos los periodos'},..
 export function participantView(participant,view='general') {
  if(!views.some(v=>v.id===view))throw new RangeError('Periodo desconocido');
  const records=participant.periodData||{};
- if(view!=='general') { const data=records[view];return {keywords:data?.keywords||[],events:data?.events||[],capsule:data?.capsule||[],memory:data?.memory||'pendiente'}; }
+ if(view!=='general') { const data=records[view];return {...data,keywords:data?.keywords||[],events:data?.events||[],capsule:data?.capsule||[],memory:data?.memory||'pendiente'}; }
  const rows=periodIds.map(id=>records[id]);
  return {keywords:concepts(rows.flatMap(r=>r?.keywords||[])),events:[...new Set(rows.flatMap(r=>r?.events||[]))],capsule:participant.capsule||[],memory:memory(rows.map(r=>r?.memory||'pendiente'))};
 }

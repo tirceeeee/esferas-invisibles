@@ -1,6 +1,8 @@
+import {motionProfiles,linePhase,wavePath} from './motion.mjs';
 import {generations,periods,generationFor,concepts,common,opacity,memory,classifyAnswer,demoParticipant,periodIds,views,participantView,networkFor} from './domain.mjs';
 const $=s=>document.querySelector(s),svgNS='http://www.w3.org/2000/svg';
 let participants=Array.from({length:20},(_,i)=>demoParticipant(i)),activeView='general',selected=null,zoom=1,paused=matchMedia('(prefers-reduced-motion: reduce)').matches,visible=[],links=[],drag=null;
+let motion={...motionProfiles.general},waveClock=0,flowClock=0,lastFrame=null,accumulator=0;
 const positions=new Map(),emptyDetails=$('#details').innerHTML;
 function element(tag,attrs={}){const el=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);return el;}
 function text(tag,value,cls){const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;}
@@ -13,9 +15,38 @@ views.forEach(view=>{
 });
 function render(){visible=participants;if(selected&&!visible.some(p=>p.id===selected))closeDetail();$('#count').textContent=`${visible.length} memorias · ${views.find(v=>v.id===activeView).label}`;$('#empty').hidden=visible.length>0;$('#edges').replaceChildren();$('#nodes').replaceChildren();links=[];
 const select=$('#participant-select');select.replaceChildren(new Option('Selecciona una memoria',''));visible.forEach((p,i)=>{select.add(new Option(`${p.id} · ${gen(p).label}`,p.id));if(!positions.has(p.id)){const angle=i*2.39996;positions.set(p.id,{x:450+Math.cos(angle)*(65+i*7),y:300+Math.sin(angle)*(65+i*6),vx:0,vy:0});}const g=gen(p),node=element('g',{class:'node',tabindex:0,role:'button','aria-label':`Abrir ${p.id}, ${g.label}`});node.dataset.id=p.id;node.append(element('circle',{r:g.radius+6,fill:g.color,opacity:.06}),element('circle',{r:g.radius,fill:g.color,stroke:g.color,'stroke-width':1}));if(g.sprite)node.append(element('image',{href:g.sprite,x:-g.radius,y:-g.radius,width:g.radius*2,height:g.radius*2,'pointer-events':'none'}));const label=element('text',{'text-anchor':'middle',y:g.radius+18});label.textContent=p.id;node.append(label);node.addEventListener('click',()=>{if(!node.moved)showDetail(p.id);});node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showDetail(p.id);}});node.addEventListener('pointerdown',e=>{node.moved=false;drag={id:p.id,startX:e.clientX,startY:e.clientY,node};node.setPointerCapture(e.pointerId);});node.addEventListener('pointermove',e=>{if(drag?.id!==p.id)return;if(Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>4)node.moved=true;const pt=$('#viewport').getScreenCTM().inverse(),point=new DOMPoint(e.clientX,e.clientY).matrixTransform(pt);Object.assign(positions.get(p.id),{x:Math.max(35,Math.min(865,point.x)),y:Math.max(55,Math.min(540,point.y)),vx:0,vy:0});paint();});node.addEventListener('pointerup',()=>drag=null);node.addEventListener('pointercancel',()=>drag=null);$('#nodes').append(node);});
-for(const edge of networkFor(visible,activeView).edges){const line=element('line',{stroke:'#d7c39b','stroke-opacity':edge.opacity,'stroke-width':.65});$('#edges').append(line);links.push({...edge,line});}paint();if(selected)showDetail(selected);}
-function paint(){for(const l of links){const a=positions.get(l.a),b=positions.get(l.b);for(const [key,value] of Object.entries({x1:a.x,y1:a.y,x2:b.x,y2:b.y}))l.line.setAttribute(key,value);}$('#nodes').querySelectorAll('.node').forEach(n=>{const p=positions.get(n.dataset.id);n.setAttribute('transform',`translate(${p.x},${p.y})`);n.classList.toggle('selected',n.dataset.id===selected);});}
-function tick(){if(!paused){for(const p of visible){const a=positions.get(p.id);a.vx+=(450-a.x)*.0009;a.vy+=(285-a.y)*.0009;}for(const l of links){const a=positions.get(l.a),b=positions.get(l.b),dx=b.x-a.x,dy=b.y-a.y,d=Math.max(1,Math.hypot(dx,dy)),repel=850/(d*d),spring=(d-(240-l.count*13))*.00018,force=spring-repel;const fx=dx/d*force,fy=dy/d*force;a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;}for(const p of visible){if(drag?.id===p.id)continue;const a=positions.get(p.id);a.vx*=.86;a.vy*=.86;a.x=Math.max(40,Math.min(860,a.x+a.vx));a.y=Math.max(60,Math.min(525,a.y+a.vy));}paint();}requestAnimationFrame(tick);}
+for(const edge of networkFor(visible,activeView).edges){const line=element('path',{fill:'none','pointer-events':'none',stroke:'#d7c39b','stroke-opacity':edge.opacity,'stroke-width':.65});$('#edges').append(line);links.push({...edge,line,phase:linePhase(edge.a,edge.b)});}paint();if(selected)showDetail(selected);}
+function paint(){for(const l of links){const a=positions.get(l.a),b=positions.get(l.b);l.line.setAttribute('d',wavePath(a,b,l.phase,waveClock,motion));}$('#nodes').querySelectorAll('.node').forEach(n=>{const p=positions.get(n.dataset.id);n.setAttribute('transform',`translate(${p.x},${p.y})`);n.classList.toggle('selected',n.dataset.id===selected);});}
+function physicsStep(){
+ const target=motionProfiles[activeView];
+ for(const key of Object.keys(motion))motion[key]+=(target[key]-motion[key])*.025;
+ flowClock+=1/60;waveClock+=Math.PI*2*motion.frequency/60;
+ for(const p of visible){
+  const a=positions.get(p.id),phase=linePhase(p.id,'flow');
+  a.vx+=(450-a.x)*.0009+Math.sin(flowClock*.43+a.y*.008+phase)*motion.drift;
+  a.vy+=(285-a.y)*.0009+Math.cos(flowClock*.36+a.x*.006+phase)*motion.drift*.8;
+ }
+ for(const l of links){
+  const a=positions.get(l.a),b=positions.get(l.b),dx=b.x-a.x,dy=b.y-a.y,d=Math.max(1,Math.hypot(dx,dy));
+  const force=(d-Math.max(100,240-l.count*13))*.00018-850/(d*d),fx=dx/d*force,fy=dy/d*force;
+  a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;
+ }
+ for(const p of visible){
+  const a=positions.get(p.id);
+  if(drag?.id===p.id){a.vx=0;a.vy=0;continue;}
+  a.vx*=.92;a.vy*=.92;
+  a.x=Math.max(40,Math.min(860,a.x+a.vx));a.y=Math.max(60,Math.min(525,a.y+a.vy));
+ }
+}
+function tick(now){
+ const dt=lastFrame===null?0:Math.min((now-lastFrame)/1000,.05);lastFrame=now;
+ if(!paused&&!document.hidden){
+  accumulator+=dt;
+  while(accumulator>=1/60){physicsStep();accumulator-=1/60;}
+  paint();
+ }else accumulator=0;
+ requestAnimationFrame(tick);
+}
 function closeDetail(){selected=null;$('#details').innerHTML=emptyDetails;$('#participant-select').value='';paint();}
 function showDetail(id){
  const p=visible.find(v=>v.id===id);if(!p)return;selected=id;$('#participant-select').value=id;

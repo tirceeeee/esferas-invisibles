@@ -49,3 +49,11 @@ Los datos por periodo viven en `periodData.p80`, `p90`, `p00` y `p10`, con `keyw
 Las barras agregadas de memoria aparecen en General; una década concreta muestra únicamente la categoría estimada de ese periodo o el estado pendiente. El formulario de demostración recoge datos por década y una cápsula final general por separado.
 
 Pendiente: sprites definitivos, revisión de la metodología, importación privada de entrevistas, síntesis anónimas y persistencia. La revisión visual automatizada del primer prototipo sigue pendiente.
+
+### Flotación y ondas por periodo
+
+La red usa resortes suaves, repulsión, resistencia viscosa y una corriente continua. La simulación avanza en pasos de 1/60 s para mantener el ritmo entre pantallas. Las conexiones son curvas con extremos anclados y fases propias por pareja; su opacidad conserva exclusivamente el significado de coincidencias.
+
+Perfiles artísticos ajustables en dist/motion.mjs: General intermedio (0,16 Hz), 80 amplio y lento (0,11 Hz), 90 rítmico (0,19 Hz), 2000 corto (0,27 Hz), 2010 fino (0,35 Hz). Las transiciones se interpolan sin reiniciar posiciones ni fase. No representan mediciones históricas.
+
+Pausar detiene tanto bolitas como ondas. La preferencia de movimiento reducido inicia la vista quieta, con reanudación voluntaria. Las pestañas ocultas no acumulan tiempo de simulación.

@@ -19,3 +19,17 @@ test('la red mantiene todas las bolitas y conexiones, cambiando solo las coincid
 test('los datos de demostración tienen cuatro épocas diferenciadas y memoria coherente',()=>{
  const p=demoParticipant(4);assert.deepEqual(Object.keys(p.periodData),periodIds);assert.notDeepEqual(participantView(p,'p80').keywords,participantView(p,'p10').keywords);assert.deepEqual(participantView(p).memory,{directa:25,parcial:25,mediada:50});
 });
+
+test('cada década muestra opacidades mínimas, medias y máximas con sus propias keywords',()=>{
+ const people=Array.from({length:20},(_,i)=>demoParticipant(i));
+ for(const view of views){
+  const {edges}=networkFor(people,view.id);
+  for(const value of [.01,.5,1])assert.ok(edges.some(e=>e.opacity===value),view.id+' '+value);
+  for(const edge of edges){
+   const a=people.find(p=>p.id===edge.a),b=people.find(p=>p.id===edge.b);
+   const expected=common(participantView(a,view.id).keywords,participantView(b,view.id).keywords);
+   assert.deepEqual(edge.keywords,expected);assert.equal(edge.opacity,opacity(expected.length));
+  }
+ }
+ assert.notDeepEqual(networkFor(people,'p80').edges.map(e=>e.opacity),networkFor(people,'p90').edges.map(e=>e.opacity));
+});

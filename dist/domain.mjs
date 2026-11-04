@@ -38,6 +38,9 @@ const decadePacks=[
 const decadeEvents=[['La caída del Muro de Berlín','La movida madrileña'],['Internet empieza a llegar a los hogares','Nuevas formas de comunicación móvil'],['La expansión de las redes sociales','La fotografía se vuelve digital'],['La vida cotidiana conectada','El confinamiento de 2020']];
 // Deliberately varied fictional records: isolated tastes, partial matches and close peers.
 function demoKeywords(index,period){
+ // Include strong and medium matches in every decade, not only in General.
+ if(index%20>=16){const count=[8,8,4,0][index%20-16];return decadePacks[period].slice(0,count);}
+ index=(index+period*3)%16;
  const pack=decadePacks[period],group=Math.floor(index/4),member=index%4;
  const choices=[[0,1,2],[3,4,5],[5,6,7],[1,4,7],[0,3,6]][group%5];
  const count=member===0?3:member===1?2:1;

@@ -15,6 +15,8 @@ npm run dev
 
 Abrir http://127.0.0.1:4173. Comprobar el código con `npm run check` y `npm test`.
 
+En Windows también puedes ejecutar `powershell -File .\preview.ps1` desde esta carpeta. Mantiene el servidor en segundo plano y comprueba que responde antes de mostrar el enlace. Los registros se guardan en `.preview/`, fuera del repositorio. La dirección local funciona mientras el equipo y el proceso estén encendidos; tras reiniciar, vuelve a ejecutar el script.
+
 ### Vercel
 
 Importar este repositorio en Vercel. Usar la raíz del repositorio, Framework Preset **Other** y Output Directory **dist**. `vercel.json` configura estos valores y omite instalación y compilación, porque la aplicación es estática. No requiere variables de entorno. `server.mjs` solo se utiliza para la vista previa local.

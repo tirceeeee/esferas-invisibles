@@ -1,4 +1,6 @@
 .git/
+.preview/
+preview.ps1
 .openai/
 .env
 .env.*

@@ -1,0 +1,10 @@
+.git/
+.openai/
+.env
+.env.*
+node_modules/
+docs/
+tests/
+README.md
+PLAN_IMPLEMENTACION.md
+*.log

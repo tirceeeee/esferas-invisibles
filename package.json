@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node server.mjs",
     "start": "node server.mjs",
-    "check": "node --check dist/app.mjs && node --check dist/domain.mjs && node --check dist/motion.mjs && node --check dist/scene.mjs",
+    "check": "node --check dist/app.mjs && node --check dist/domain.mjs && node --check dist/motion.mjs && node --check dist/scene.mjs && node --check dist/connections.mjs",
     "test": "node --test tests/*.test.mjs"
   }
 }

@@ -25,7 +25,8 @@ export function participantView(participant,view='general') {
 }
 export function networkFor(participants,view='general') {
  const nodes=participants.map(p=>({id:p.id,data:participantView(p,view)})),edges=[];
- for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const shared=common(nodes[i].data.keywords,nodes[j].data.keywords);edges.push({a:nodes[i].id,b:nodes[j].id,count:shared.length,opacity:opacity(shared.length)});}
+ const sets=nodes.map(n=>new Set(concepts(n.data.keywords)));
+ for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const keywords=[...sets[i]].filter(k=>sets[j].has(k));edges.push({a:nodes[i].id,b:nodes[j].id,keywords,count:keywords.length,opacity:opacity(keywords.length)});}
  return {nodes,edges};
 }
 const decadePacks=[
@@ -35,8 +36,15 @@ const decadePacks=[
  ['streaming','redes sociales','videojuegos','smartphone','Netflix','fotografía','podcasts','Spotify']
 ];
 const decadeEvents=[['La caída del Muro de Berlín','La movida madrileña'],['Internet empieza a llegar a los hogares','Nuevas formas de comunicación móvil'],['La expansión de las redes sociales','La fotografía se vuelve digital'],['La vida cotidiana conectada','El confinamiento de 2020']];
+// Deliberately varied fictional records: isolated tastes, partial matches and close peers.
+function demoKeywords(index,period){
+ const pack=decadePacks[period],group=Math.floor(index/4),member=index%4;
+ const choices=[[0,1,2],[3,4,5],[5,6,7],[1,4,7],[0,3,6]][group%5];
+ const count=member===0?3:member===1?2:1;
+ return choices.slice(0,count).map(j=>pack[j]);
+}
 export function demoParticipant(index){
  const g=generations[index%5],answers=g.id==='millennial'?['mediada','parcial','directa','directa']:g.id==='gen_z'?['mediada','mediada','parcial','directa']:['directa','directa','directa','directa'];
- const periodData=Object.fromEntries(periodIds.map((id,i)=>{const keywords=concepts(decadePacks[i].filter((_,j)=>(j+index+i)%3!==0));return [id,{keywords,events:[decadeEvents[i][index%2]],capsule:keywords.slice(0,3),memory:answers[i]}];}));
+ const periodData=Object.fromEntries(periodIds.map((id,i)=>{const keywords=concepts(demoKeywords(index,i));return [id,{keywords,events:[decadeEvents[i][index%2]],capsule:keywords.slice(0,3),memory:answers[i]}];}));
  return {id:`R-${String(index+1).padStart(3,'0')}`,generation:g.id,periodData,capsule:periodIds.map(id=>periodData[id].capsule[0]),synthetic:true};
 }

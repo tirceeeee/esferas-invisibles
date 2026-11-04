@@ -28,6 +28,7 @@ La configuración está preparada; la vinculación a un proyecto de Vercel debe 
 - `dist/index.html`: estructura de la interfaz.
 - `dist/styles.css`: diseño adaptable basado en Figma, con fuentes locales.
 - `dist/scene.mjs`: posiciones y tamaños de sprites, destino del zoom.
+- `dist/connections.mjs`: capa Canvas de conexiones con opacidad exacta y ondas sin asignaciones por línea.
 - `dist/assets/figma/`: imagen y SVG originales de las esferas.
 - `dist/app.mjs`: mapa, selección, filtros y formulario.
 - `dist/domain.mjs`: generaciones, memoria, conceptos y datos ficticios.
@@ -69,3 +70,15 @@ Se reutilizan sphere.png y los cuatro SVG de núcleos descargados de Figma, sin 
 Al abrir una esfera, se amplía suavemente hacia la zona izquierda y se ocultan las demás esferas y conexiones, también para navegación con teclado. La ficha a la derecha conserva todos los datos, con desplazamiento interno cuando no caben. Cambiar de década actualiza la misma ficha. Volver a la red o Esc recupera las posiciones, el foco y el filtro. En móvil la ficha pasa debajo de la esfera. Movimiento reducido desactiva las transiciones y comienza con ondas pausadas.
 
 Validación: apertura y regreso, filtro exclusivo 80/90 con el mismo participante, 20 nodos al regresar, vista estrecha sin desbordamiento horizontal y pruebas de dominio/movimiento.
+
+### Opacidad y rendimiento
+
+Se ha contrastado la regla con la biblia: opacidad = max(0,01, min(coincidencias / 8, 1)). General compara conceptos únicos de las cuatro épocas, sin duplicar un concepto repetido entre décadas. Cada década compara únicamente sus respuestas. La red conserva todas las parejas. Cada conexión devuelve también sus keywords compartidas para poder verificar su recuento.
+
+Los anteriores ejemplos ficticios producían entre 9 y 21 coincidencias en General: las 190 conexiones alcanzaban 100 %. Se han diversificado los ejemplos sin modificar la regla ni datos reales. La demostración incluye ahora 0, 4 y 8 o más coincidencias.
+
+Los hilos se dibujan en una sola capa Canvas, con globalAlpha igual a la opacidad calculada. Se eliminan 190 filtros SVG, las cadenas de trazado por fotograma y la actualización continua de atributos de accesibilidad. Las ondas reutilizan buffers numéricos y cálculos trigonométricos compartidos; los extremos siguen las posiciones efectivamente dibujadas de las esferas. Canvas limita la densidad a 2x y se reajusta al tamaño del mapa.
+
+La animación deja de solicitar fotogramas al estabilizarse el zoom de detalle, al pausar y al ocultarse la pestaña; vuelve con las interacciones correspondientes. Los diálogos suspenden la flotación mientras están abiertos.
+
+Validación: 12 pruebas, incluyendo equivalencia geométrica con las ondas originales, opacidad exacta de Canvas, deduplicación global y variedad de la demostración. Ensayo local de 600 fotogramas y 190 curvas: cálculo antiguo 2238 ms, nuevo 39 ms. Es una medición de CPU geométrica con contexto de dibujo simulado, no una medición de FPS ni del coste total de renderizado.

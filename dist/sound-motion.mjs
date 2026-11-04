@@ -18,5 +18,5 @@ export function soundFeatures(view,time){
 }
 export function soundMotion(view,time){
  const signal=soundFeatures(view,time);
- return {amplitude:5+signal.energy*19,frequency:.09+signal.brightness*.2+signal.transient*.12,waves:.8+signal.brightness*2,drift:.018};
+ return {amplitude:1+signal.energy*3,frequency:.025+signal.brightness*.05+signal.transient*.025,waves:.7+signal.brightness*1.1,drift:.018};
 }

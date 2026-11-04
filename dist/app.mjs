@@ -1,10 +1,12 @@
+import {initializeDrift,stepFlotation} from './flotation.mjs';
+import {soundMotion} from './sound-motion.mjs';
 import {createConnectionLayer} from './connections.mjs';
 import {generations,periods,generationFor,concepts,classifyAnswer,demoParticipant,periodIds,views,participantView,networkFor} from './domain.mjs';
 import {motionProfiles,linePhase} from './motion.mjs';
 import {sphereStyles,initialPosition,focusTarget} from './scene.mjs';
 const $=s=>document.querySelector(s),svgNS='http://www.w3.org/2000/svg';
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)'),mobile=matchMedia('(max-width:700px)');
-let participants=Array.from({length:20},(_,i)=>demoParticipant(i)),activeView='general',selected=null,paused=reducedMotion.matches,visible=participants,links=[],drag=null;
+let participants=Array.from({length:20},(_,i)=>demoParticipant(i)),activeView='general',selected=null,paused=reducedMotion.matches,visible=participants,links=[];
 let motion={...motionProfiles.general},waveClock=0,flowClock=0,lastFrame=null,accumulator=0;
 let frame=null,sceneDirty=true;
 const connectionLayer=createConnectionLayer($('#connections'));
@@ -25,20 +27,15 @@ function render(){
  for(const [i,p] of visible.entries()){
   select.add(new Option(p.id+' · '+gen(p).label,p.id));
   if(nodeElements.has(p.id))continue;
-  const anchor=initialPosition(i);positions.set(p.id,{...anchor,hx:anchor.x,hy:anchor.y,vx:0,vy:0,phase:linePhase(p.id,'flow')});displayPositions.set(p.id,{...anchor,scale:1});
+  const anchor=initialPosition(i,visible.length);positions.set(p.id,initializeDrift({...anchor,radius:sphereStyles[p.generation].width*.1}));displayPositions.set(p.id,{...anchor,scale:1});
   const style=sphereStyles[p.generation],node=element('g',{class:'node',tabindex:0,role:'button','aria-label':'Abrir '+p.id+', '+gen(p).label});node.dataset.id=p.id;
   node.append(element('circle',{r:style.width*.097,fill:'#fff','pointer-events':'none'}));
   node.append(element('image',{href:'./assets/figma/sphere.png',x:-style.width*.54,y:-style.height*.503,width:style.width,height:style.height,class:'sphere-art'}));
-  if(style.core)node.append(element('image',{href:'./assets/figma/'+style.core,x:-style.coreSize/2,y:-style.coreSize/2,width:style.coreSize,height:style.coreSize,class:'sphere-core'}));
+  node.append(element('circle',{r:style.width*.097,fill:'#000',class:'sphere-core'}));
+  if(style.whiteRatio>0)node.append(element('circle',{r:style.width*.097*style.whiteRatio,fill:'#fafbf7',class:'generation-center'}));
   node.append(element('circle',{r:Math.max(14,style.width*.12),fill:'transparent',class:'hit-area'}),element('circle',{r:Math.max(16,style.width*.13),class:'focus-ring'}));
-  node.addEventListener('click',()=>{if(!node.moved)showDetail(p.id);});
+  node.addEventListener('click',()=>showDetail(p.id));
   node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showDetail(p.id);}});
-  node.addEventListener('pointerdown',e=>{if(selected)return;node.moved=false;drag={id:p.id,startX:e.clientX,startY:e.clientY};node.setPointerCapture(e.pointerId);});
-  node.addEventListener('pointermove',e=>{if(drag?.id!==p.id)return;if(Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>4)node.moved=true;
-   const point=new DOMPoint(e.clientX,e.clientY).matrixTransform($('#viewport').getScreenCTM().inverse());const a=positions.get(p.id);
-   a.x=Math.max(80,Math.min(1430,point.x));a.y=Math.max(110,Math.min(780,point.y));a.hx=a.x;a.hy=a.y;a.vx=a.vy=0;paint(1);
-  });
-  const release=()=>{if(drag?.id===p.id)drag=null;};node.addEventListener('pointerup',release);node.addEventListener('pointercancel',release);node.addEventListener('lostpointercapture',release);
   $('#nodes').append(node);nodeElements.set(p.id,node);
  }
  links=networkFor(visible,activeView).edges.map(edge=>{const phase=linePhase(edge.a,edge.b);return {...edge,phaseSin:Math.sin(phase),phaseCos:Math.cos(phase)};});
@@ -63,14 +60,10 @@ function paint(blend){
 }
 function wake(){if(frame===null&&!document.hidden)frame=requestAnimationFrame(tick);}
 function physicsStep(){
- const target=motionProfiles[activeView];for(const key of Object.keys(motion))motion[key]+=(target[key]-motion[key])*.025;
- flowClock+=1/60;waveClock+=Math.PI*2*motion.frequency/60;
- if(selected)return;
- for(const p of visible){const a=positions.get(p.id),phase=a.phase;
-  a.vx+=(a.hx-a.x)*.002+Math.sin(flowClock*.43+a.y*.008+phase)*motion.drift;
-  a.vy+=(a.hy-a.y)*.002+Math.cos(flowClock*.36+a.x*.006+phase)*motion.drift*.8;
-  if(drag?.id===p.id){a.vx=a.vy=0;continue;}a.vx*=.92;a.vy*=.92;a.x+=a.vx;a.y+=a.vy;
- }
+ flowClock+=1/60;const target=soundMotion(activeView,flowClock);
+ for(const key of Object.keys(motion))motion[key]+=(target[key]-motion[key])*.025;
+ waveClock+=Math.PI*2*motion.frequency/60;
+ stepFlotation(positions,links);
 }
 function tick(now){
  frame=null;const dt=lastFrame===null?1/60:Math.min((now-lastFrame)/1000,.05);lastFrame=now;
@@ -87,7 +80,7 @@ document.addEventListener('visibilitychange',()=>{lastFrame=null;accumulator=0;i
 for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('close',wake);
 function closeDetail(){const previous=selected;selected=null;$('#experience').classList.remove('is-detail');$('#details').hidden=true;$('#back').hidden=true;$('.site-header').inert=false;$('#participant-select').value='';syncSelection();sceneDirty=true;wake();paint(reducedMotion.matches?1:0);nodeElements.get(previous)?.focus({preventScroll:true});}
 function showDetail(id,moveFocus=true){
- const p=visible.find(v=>v.id===id);if(!p)return;const opening=selected!==id;selected=id;drag=null;syncSelection();wake();
+ const p=visible.find(v=>v.id===id);if(!p)return;const opening=selected!==id;selected=id;syncSelection();wake();
  $('#experience').classList.add('is-detail');$('.site-header').inert=true;$('#back').hidden=false;$('#participant-select').value=id;
  const data=participantView(p,activeView),view=views.find(v=>v.id===activeView),root=$('#details');root.hidden=false;root.replaceChildren();
  const top=text('div','','detail-top'),title=text('h2',p.id);title.id='detail-title';const close=text('button','×');close.setAttribute('aria-label','Volver a la red');close.onclick=closeDetail;top.append(title,close);
@@ -121,6 +114,6 @@ $('#add-form').elements.year.max=new Date().getFullYear();$('#open-add').onclick
  const split=(name,separator=',')=>String(form.get(name)||'').split(separator).map(x=>x.trim()).filter(Boolean);
  const capsule=split('capsule'),periodData=Object.fromEntries(periodIds.map((id,i)=>[id,{keywords:concepts(split('keywords'+i)),events:split('events'+i,';'),capsule:split('capsule'+i),memory:classifyAnswer(form.get('lived'+i),form.get('recall'+i))}]));
  if(!g||!capsule.length||Object.values(periodData).some(d=>d.keywords.length>12)){$('#form-error').textContent='Comprueba el año, la cápsula general y el máximo de 12 referentes por periodo.';return;}
- const p={id:'R-'+String(participants.length+1).padStart(3,'0'),generation:g.id,periodData,capsule,synthetic:true};participants.push(p);render();showDetail(p.id);$('#add-dialog').close();e.target.reset();e.target.querySelectorAll('select').forEach(s=>{s.disabled=false;s.required=true;});$('#form-error').textContent='';$('#announcement').textContent='Memoria '+p.id+' incorporada a la red.';
+ const p={id:'R-'+String(participants.length+1).padStart(3,'0'),generation:g.id,periodData,capsule,synthetic:true};participants.push(p);render();if(selected)closeDetail();$('#add-dialog').close();sceneDirty=true;wake();e.target.reset();e.target.querySelectorAll('select').forEach(s=>{s.disabled=false;s.required=true;});$('#form-error').textContent='';$('#announcement').textContent='Memoria '+p.id+' incorporada a la red.';
 };
 render();resizeScene();wake();

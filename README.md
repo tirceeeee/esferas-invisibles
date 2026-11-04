@@ -51,13 +51,21 @@ Los datos por periodo viven en `periodData.p80`, `p90`, `p00` y `p10`, con `keyw
 
 Las barras agregadas de memoria aparecen en General; una década concreta muestra únicamente la categoría estimada de ese periodo o el estado pendiente. El formulario de demostración recoge datos por década y una cápsula final general por separado.
 
-Pendiente: validar la asignación definitiva de variantes visuales a generaciones, revisión de la metodología, importación privada de entrevistas, síntesis anónimas y persistencia.
+Pendiente: revisión de la metodología, importación privada de entrevistas, síntesis anónimas y persistencia.
 
 ### Flotación y ondas por periodo
 
-La red usa anclajes elásticos suaves, resistencia viscosa y una corriente continua. Los anclajes conservan la composición del diseño y se recolocan al arrastrar una esfera. La simulación avanza en pasos de 1/60 s para mantener el ritmo entre pantallas. Las conexiones son curvas con extremos anclados y fases propias por pareja; su opacidad conserva exclusivamente el significado de coincidencias.
+Las esferas flotan libremente con direcciones aleatorias suavizadas, resistencia viscosa, separación entre participantes y límites suaves. No se pueden arrastrar; el clic abre su información. Las afinidades por keywords ejercen una atracción débil y la red se reorganiza al incorporar una cápsula, conservando las posiciones existentes. La simulación avanza en pasos de 1/60 s. La física está en `dist/flotation.mjs`.
 
-Perfiles artísticos ajustables en dist/motion.mjs: General intermedio (0,16 Hz), 80 amplio y lento (0,11 Hz), 90 rítmico (0,19 Hz), 2000 corto (0,27 Hz), 2010 fino (0,35 Hz). Las transiciones se interpolan sin reiniciar posiciones ni fase. No representan mediciones históricas.
+Se conservan los tamaños anteriores. La generación silenciosa tiene núcleo negro; Boomers, X y Millennials tienen centros blancos progresivamente mayores; Z tiene núcleo blanco. Las proporciones están en `dist/scene.mjs`.
+
+`dist/sound-motion.mjs` produce envolventes sintéticas: energía para amplitud, brillo para densidad de ondas y pulsos para ritmo. Cada década tiene un perfil y General combina los cuatro. Son decisiones artísticas, no mediciones históricas. No se reproduce audio. La opacidad sigue dependiendo exclusivamente de los conceptos compartidos. Las líneas se dibujan en una sola capa Canvas con cálculos de ondas compartidos.
+
+### Grabación candidata
+
+[Calles de Toronto, verano de 1995, por TRP](https://freesound.org/people/TRP/sounds/567324/): grabación en casete con tráfico, voces y música de coches, según su autor. Duración 4:23; licencia CC0 indicada en la ficha. Publicada en 2021, grabada en 1995 según el autor. La descarga requiere iniciar sesión. Consultada el 4 de noviembre de 2026.
+
+No está descargada ni integrada. Es una referencia localizada, no una representación de toda la década ni del contexto español. Faltan fuentes validadas para los otros tres periodos. Una futura integración puede extraer energía RMS, centroide espectral y transitorios previamente y guardar series pequeñas para animar las líneas sin decodificar audio en cada fotograma.
 
 Pausar detiene tanto bolitas como ondas. La preferencia de movimiento reducido inicia la vista quieta, con reanudación voluntaria. Las pestañas ocultas no acumulan tiempo de simulación.
 

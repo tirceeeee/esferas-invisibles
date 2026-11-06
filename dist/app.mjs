@@ -53,6 +53,7 @@ function paint(blend){
   let changed=false;
   for(const key of ['x','y','scale']){const delta=target[key]-display[key];if(Math.abs(delta)>.001){display[key]+=delta*blend;moving=true;changed=true;}else if(delta!==0){display[key]=target[key];changed=true;}}
   if(changed||!node.hasAttribute('transform'))node.setAttribute('transform',`translate(${display.x},${display.y}) scale(${display.scale})`);
+  node.querySelector('.sphere-art').setAttribute('transform',`scale(${selected===p.id?1:a.breath})`);
  }
  if(!selected&&(sceneDirty||moving))connectionLayer.draw(links,displayPositions,waveClock,motion);
  sceneDirty=false;return moving;

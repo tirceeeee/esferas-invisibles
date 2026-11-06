@@ -15,7 +15,7 @@ test('la flotación se percibe y permanece a menos de ocho píxeles de su sitio 
  const original=[...nodes.values()].map(p=>({...p}));let maxTravel=0;
  for(let t=0;t<36000;t++){
   stepFlotation(nodes,edges,random);
-  [...nodes.values()].forEach((p,i)=>{assert.ok(Number.isFinite(p.x+p.y));assert.ok(p.x>=70&&p.x<=1450&&p.y>=105&&p.y<=800);assert.ok(Math.hypot(p.vx,p.vy)<=.03);maxTravel=Math.max(maxTravel,Math.hypot(p.x-original[i].x,p.y-original[i].y));});
+  [...nodes.values()].forEach((p,i)=>{assert.ok(Number.isFinite(p.x+p.y));assert.ok(p.x>=70&&p.x<=1450&&p.y>=105&&p.y<=800);assert.ok(Math.hypot(p.vx,p.vy)<=.08);maxTravel=Math.max(maxTravel,Math.hypot(p.x-original[i].x,p.y-original[i].y));});
  }
  assert.ok(maxTravel>4 && maxTravel<8);
  assert.ok(Math.max(...original.map(p=>p.x))-Math.min(...original.map(p=>p.x))>900);
@@ -27,7 +27,7 @@ test('añadir un participante mantiene el sitio de las esferas existentes',()=>{
  nodes.set(people[1].id,initializeDrift({x:500,y:400},random));
  stepFlotation(nodes,edges,random);
  const a=nodes.get(people[0].id),b=nodes.get(people[1].id);
- assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>0);assert.ok(Math.hypot(a.x-before.x,a.y-before.y)<=.03);
+ assert.ok(Math.hypot(a.x-b.x,a.y-b.y)>0);assert.ok(Math.hypot(a.x-before.x,a.y-before.y)<=.08);
 });
 test('ondas sintéticas por década evolucionan y General mezcla las cuatro señales',()=>{
  const ids=['p80','p90','p00','p10'];

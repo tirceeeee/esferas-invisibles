@@ -40,7 +40,7 @@ export function createConnectionLayer(canvas){
    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
    if(!width||!height)return;
    ctx.setTransform(ratio*scale,0,0,ratio*scale,ratio*offsetX,ratio*offsetY);
-   ctx.strokeStyle='#777772';ctx.lineWidth=.8;ctx.lineCap='round';sampler.update(clock,profile);
+   ctx.strokeStyle='#171717';ctx.lineWidth=.8;ctx.lineCap='round';sampler.update(clock,profile);
    for(const edge of edges){
     ctx.globalAlpha=edge.opacity;ctx.beginPath();
     sampler.trace(ctx,positions.get(edge.a),positions.get(edge.b),edge.phaseSin,edge.phaseCos);ctx.stroke();

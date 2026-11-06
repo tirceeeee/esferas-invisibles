@@ -18,11 +18,10 @@ export function wavePath(a, b, phase, clock, profile) {
  const dx = b.x - a.x, dy = b.y - a.y, length = Math.hypot(dx, dy);
  const nx = length ? -dy / length : 0, ny = length ? dx / length : 0;
  const amplitude = profile.amplitude * Math.min(1, length / 140);
- const points = Array.from({length: 17}, (_, i) => {
-  const u = i / 16;
-  const wave = Math.sin(u * Math.PI * 2 * profile.waves - clock + phase)
-   + .22 * Math.sin(u * Math.PI * 4 + clock * .57 + phase);
-  const offset = (i === 0 || i === 16) ? 0 : amplitude * Math.sin(Math.PI * u) * wave;
+ const points = Array.from({length: 33}, (_, i) => {
+  const u = i / 32;
+  const wave = Math.sin(u * Math.PI * 2 * profile.waves - clock + phase);
+  const offset = (i === 0 || i === 32) ? 0 : amplitude * Math.sin(Math.PI * u) * wave;
   return {x: a.x + dx * u + nx * offset, y: a.y + dy * u + ny * offset};
  });
  let path = `M ${a.x} ${a.y}`;

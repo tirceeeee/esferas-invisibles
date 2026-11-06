@@ -1,21 +1,40 @@
 import {initialParticipants} from './participants.mjs';
 import {periodQuestions,generalQuestions,participantFromForm} from './questionnaire.mjs';
 import {initializeDrift,stepFlotation} from './flotation.mjs';
-import {soundMotion} from './sound-motion.mjs';
-import {createConnectionLayer} from './connections.mjs';
+import {networkMotion,connectionDensity} from './sound-motion.mjs';
+import {createConnectionLayer,createWaveSampler} from './connections.mjs';
 import {generations,periods,views,participantView,networkFor} from './domain.mjs';
 import {linePhase} from './motion.mjs';
 import {sphereStyles,spriteAttributes,initialPosition,focusTarget} from './scene.mjs';
 const $=s=>document.querySelector(s),svgNS='http://www.w3.org/2000/svg';
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)'),mobile=matchMedia('(max-width:700px)');
 let participants=structuredClone(initialParticipants),activeView='general',selected=null,paused=reducedMotion.matches,visible=participants,links=[];
-let motion=soundMotion('general',0),waveClock=0,flowClock=0,lastFrame=null,accumulator=0;
+let density=0,motion=networkMotion('general',0,0),waveClock=0,flowClock=0,lastFrame=null,accumulator=0;
 let frame=null,sceneDirty=true;
 const connectionLayer=createConnectionLayer($('#connections'));
 const positions=new Map(),nodeElements=new Map(),displayPositions=new Map();
 function element(tag,attrs={}){const el=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);return el;}
 function text(tag,value,cls){const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;}
 function gen(p){return generations.find(g=>g.id===p.generation);}
+// The guide uses the very same ribbon geometry as the live Canvas network.
+function renderHelpConnections(){
+ const sampler=createWaveSampler();sampler.update(1.3,networkMotion('general',0,.75));
+ const draw=(svg,nodes,edges)=>{
+  svg.replaceChildren();
+  for(const [from,to,alpha] of edges){
+   let d='';const path={moveTo:(x,y)=>d+=`M${x} ${y}`,lineTo:(x,y)=>d+=`L${x} ${y}`,quadraticCurveTo:(x,y,u,v)=>d+=`Q${x} ${y} ${u} ${v}`,closePath:()=>d+='Z'};
+   sampler.ribbon(path,nodes[from],nodes[to],Math.sin(.7),Math.cos(.7));
+   svg.append(element('path',{d,opacity:alpha}));
+  }
+  for(const n of nodes){
+   const scale=n.radius/(sphereStyles[n.generation].width*.097),group=element('g',{transform:`translate(${n.x},${n.y}) scale(${scale})`});
+   group.append(element('image',spriteAttributes(n.generation)));svg.append(group);
+  }
+ };
+ draw($('.help-network'),[{x:55,y:100,radius:22,generation:'silent'},{x:245,y:70,radius:15,generation:'millennial'},{x:170,y:145,radius:8,generation:'gen_z'}],[[0,1,.5],[0,2,.25],[1,2,.75]]);
+ document.querySelectorAll('.help-links svg').forEach((svg,i)=>draw(svg,[{x:22,y:30,radius:8,generation:'silent'},{x:198,y:30,radius:7,generation:'millennial'}],[[0,1,[.01,.5,1][i]]]));
+}
+renderHelpConnections();
 const filterNames={p80:'década 80',p90:'década 90',p00:'década 00',p10:'década 10',general:'General'};
 [...views.slice(1),views[0]].forEach(view=>{
  const label=text('label','','filter-row'),input=document.createElement('input');
@@ -38,6 +57,7 @@ function render(){
   $('#nodes').append(node);nodeElements.set(p.id,node);
  }
  links=networkFor(visible,activeView).edges.map(edge=>{const phase=linePhase(edge.a,edge.b);return {...edge,phaseSin:Math.sin(phase),phaseCos:Math.cos(phase)};});
+ density=connectionDensity(links);
  sceneDirty=true;if(selected)showDetail(selected,false);paint(0);wake();
 }
 function syncSelection(){
@@ -54,13 +74,14 @@ function paint(blend){
   for(const key of ['x','y','scale']){const delta=target[key]-display[key];if(Math.abs(delta)>.001){display[key]+=delta*blend;moving=true;changed=true;}else if(delta!==0){display[key]=target[key];changed=true;}}
   if(changed||!node.hasAttribute('transform'))node.setAttribute('transform',`translate(${display.x},${display.y}) scale(${display.scale})`);
   node.querySelector('.sphere-art').setAttribute('transform',`scale(${selected===p.id?1:a.breath})`);
+  display.radius=sphereStyles[p.generation].width*.097*a.breath*display.scale;
  }
  if(!selected&&(sceneDirty||moving))connectionLayer.draw(links,displayPositions,waveClock,motion);
  sceneDirty=false;return moving;
 }
 function wake(){if(frame===null&&!document.hidden)frame=requestAnimationFrame(tick);}
 function physicsStep(){
- flowClock+=1/60;const target=soundMotion(activeView,flowClock);
+ flowClock+=1/60;const target=networkMotion(activeView,flowClock,density);
  for(const key of Object.keys(motion))motion[key]+=(target[key]-motion[key])*.025;
  waveClock+=Math.PI*2*motion.frequency/60;
  stepFlotation(positions,links);

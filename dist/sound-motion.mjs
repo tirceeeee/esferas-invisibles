@@ -7,6 +7,15 @@ const profiles={
  p10:{period:3.5,phase:4.8,energy:.32,brightness:.85,pulse:.42},
 };
 const bound=x=>Math.max(0,Math.min(1,x));
+// Share of all participant pairs with at least one shared keyword in the active view.
+// Zero-match lines stay visible but do not count as semantic connections.
+export function connectionDensity(edges){return edges.length?edges.filter(edge=>edge.count>0).length/edges.length:0;}
+export function networkMotion(view,time,density){
+ const ratio=bound(density);
+ // Connectivity controls bending, not speed: broad, soft curves versus taut filaments.
+ // Keep wavelength and tempo identical so a decade cannot appear more active by vibrating faster.
+ return {amplitude:.6+10*ratio*ratio,frequency:.075,waves:.8,drift:.018};
+}
 export function soundFeatures(view,time){
  if(view==='general'){
   const rows=Object.keys(profiles).map(id=>soundFeatures(id,time));

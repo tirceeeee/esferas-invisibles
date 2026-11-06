@@ -1,10 +1,10 @@
-// Coordinates and sprite sizes taken from the two Figma frames, without browser chrome.
+// Progressive generation sizes, from oldest to youngest.
 export const sphereStyles = {
- silent: {width:127.99,height:85.188,whiteRatio:0},
- boomer: {width:116.255,height:77.368,whiteRatio:.16},
- gen_x: {width:105.539,height:70.245,whiteRatio:.32},
- millennial: {width:111.529,height:74.223,whiteRatio:.55},
- gen_z: {width:47.8,height:31.811,whiteRatio:1},
+ silent: {width:140,height:93.18,whiteRatio:0},
+ boomer: {width:124,height:82.53,whiteRatio:.16},
+ gen_x: {width:108,height:71.88,whiteRatio:.32},
+ millennial: {width:92,height:61.23,whiteRatio:.55},
+ gen_z: {width:76,height:50.58,whiteRatio:1},
 };
 // Original transparent artwork. Align its visible centre, preserving the previous core diameter.
 const generationSprites = {

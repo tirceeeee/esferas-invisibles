@@ -69,6 +69,10 @@ dialog[open]{animation:memory-arrive .3s ease-out}#add-dialog h2{font-size:clamp
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 @keyframes dialog-appear{from{opacity:0}to{opacity:1}}
 dialog[open]{animation:dialog-appear .3s ease-out}
+#add-form>.dialog-top{position:sticky;top:-30px;z-index:3;background:#fafafa;padding:12px 0;border-bottom:1px solid #ddd;flex-wrap:wrap}
+#add-form #close-add{font-size:13px;padding:10px 16px;background:#ededed;white-space:nowrap}
+@media(max-width:900px){#add-form>.dialog-top{top:-24px}}
+@media(max-width:420px){#add-form>.dialog-top{top:-20px}#add-form>.dialog-top .eyebrow{margin:0;width:100%}}
 /* Frosted glass at rest; the existing dark hover remains above this specificity. */
 .details :where(.chip,.event,.capsule){
  background:linear-gradient(135deg,rgba(255,255,255,.82),rgba(255,255,255,.28) 48%,rgba(213,213,213,.3));

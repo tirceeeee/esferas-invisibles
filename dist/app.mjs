@@ -5,14 +5,16 @@ import {networkMotion,connectionDensity} from './sound-motion.mjs';
 import {createConnectionLayer,createWaveSampler} from './connections.mjs';
 import {generations,periods,views,participantView,networkFor} from './domain.mjs';
 import {linePhase} from './motion.mjs';
-import {sphereStyles,spriteAttributes,initialPosition,focusTarget} from './scene.mjs';
+import {sphereStyles,spriteAttributes,initialPosition,responsiveLayout,networkTarget,responsiveFocus} from './scene.mjs';
 const $=s=>document.querySelector(s),svgNS='http://www.w3.org/2000/svg';
-const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)'),mobile=matchMedia('(max-width:700px)');
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)'),mobile=matchMedia('(max-width:900px)');
+let sceneLayout=responsiveLayout(innerWidth,innerHeight,mobile.matches);
 let participants=structuredClone(initialParticipants),activeView='general',selected=null,paused=reducedMotion.matches,visible=participants,links=[];
 let density=0,motion=networkMotion('general',0,0),waveClock=0,flowClock=0,lastFrame=null,accumulator=0;
 let frame=null,sceneDirty=true;
 const connectionLayer=createConnectionLayer($('#connections'));
 const positions=new Map(),nodeElements=new Map(),displayPositions=new Map();
+const detailDrift=new Map();
 function element(tag,attrs={}){const el=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);return el;}
 function text(tag,value,cls){const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;}
 function gen(p){return generations.find(g=>g.id===p.generation);}
@@ -69,18 +71,27 @@ function paint(blend){
  let moving=false;
  for(const p of visible){
   if(selected&&selected!==p.id)continue;
-  const node=nodeElements.get(p.id),a=positions.get(p.id),display=displayPositions.get(p.id),target=selected===p.id?focusTarget(sphereStyles[p.generation],mobile.matches):{x:a.x,y:a.y,scale:1};
+  const node=nodeElements.get(p.id),a=positions.get(p.id),display=displayPositions.get(p.id),target=selected===p.id?responsiveFocus(sphereStyles[p.generation],sceneLayout):networkTarget(a,sceneLayout);
   let changed=false;
   for(const key of ['x','y','scale']){const delta=target[key]-display[key];if(Math.abs(delta)>.001){display[key]+=delta*blend;moving=true;changed=true;}else if(delta!==0){display[key]=target[key];changed=true;}}
   if(changed||!node.hasAttribute('transform'))node.setAttribute('transform',`translate(${display.x},${display.y}) scale(${display.scale})`);
-  node.querySelector('.sphere-art').setAttribute('transform',`scale(${selected===p.id?1:a.breath})`);
+  let spriteTransform=`scale(${a.breath})`;
+  if(selected===p.id){
+   const t=detailDrift.get(p.id)?.elapsed||0;
+   // Animate the artwork around its own centre, keeping the enlarged node anchored.
+   const breath=Math.sin(t*Math.PI/2.8);
+   spriteTransform=`scale(${1+.055*breath})`;
+  }
+  node.querySelector('.sphere-art').setAttribute('transform',spriteTransform);
   display.radius=sphereStyles[p.generation].width*.097*a.breath*display.scale;
+  node.querySelector('.hit-area').setAttribute('r',sceneLayout.compact&&!selected?Math.max(14,22/(sceneLayout.pixelScale*display.scale)):Math.max(14,sphereStyles[p.generation].width*.12));
  }
  if(!selected&&(sceneDirty||moving))connectionLayer.draw(links,displayPositions,waveClock,motion);
  sceneDirty=false;return moving;
 }
 function wake(){if(frame===null&&!document.hidden)frame=requestAnimationFrame(tick);}
 function physicsStep(){
+ if(selected){stepFlotation(detailDrift);return;}
  flowClock+=1/60;const target=networkMotion(activeView,flowClock,density);
  for(const key of Object.keys(motion))motion[key]+=(target[key]-motion[key])*.025;
  waveClock+=Math.PI*2*motion.frequency/60;
@@ -89,19 +100,21 @@ function physicsStep(){
 function tick(now){
  frame=null;const dt=lastFrame===null?1/60:Math.min((now-lastFrame)/1000,.05);lastFrame=now;
  if(document.hidden){accumulator=0;lastFrame=null;return;}
- const animating=!paused&&!selected&&!document.querySelector('dialog[open]');
+ const animating=!paused&&!document.querySelector('dialog[open]');
  if(animating){accumulator+=dt;while(accumulator>=1/60){physicsStep();accumulator-=1/60;}sceneDirty=true;}else accumulator=0;
  const transitioning=paint(reducedMotion.matches?1:1-Math.exp(-dt*7));
  if(animating||transitioning)wake();else lastFrame=null;
 }
-const resizeScene=()=>{const bounds=$('.map-wrap').getBoundingClientRect();connectionLayer.resize(bounds.width,bounds.height,devicePixelRatio);sceneDirty=true;wake();};
+const resizeScene=()=>{const bounds=$('.map-wrap').getBoundingClientRect();sceneLayout=responsiveLayout(bounds.width,bounds.height,mobile.matches);$('#graph').setAttribute('viewBox',`0 0 ${sceneLayout.width} ${sceneLayout.height}`);connectionLayer.resize(bounds.width,bounds.height,devicePixelRatio,sceneLayout.width,sceneLayout.height);sceneDirty=true;paint(1);wake();};
 new ResizeObserver(resizeScene).observe($('.map-wrap'));
 window.addEventListener('resize',resizeScene);
 document.addEventListener('visibilitychange',()=>{lastFrame=null;accumulator=0;if(document.hidden){if(frame!==null)cancelAnimationFrame(frame);frame=null;}else{sceneDirty=true;wake();}});
 for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('close',wake);
 function closeDetail(){const previous=selected;selected=null;$('#experience').classList.remove('is-detail');$('#details').hidden=true;$('#back').hidden=true;$('.site-header').inert=false;$('#participant-select').value='';syncSelection();sceneDirty=true;wake();paint(reducedMotion.matches?1:0);nodeElements.get(previous)?.focus({preventScroll:true});}
 function showDetail(id,moveFocus=true){
- const p=visible.find(v=>v.id===id);if(!p)return;const opening=selected!==id;selected=id;syncSelection();wake();
+ const p=visible.find(v=>v.id===id);if(!p)return;const opening=selected!==id;
+ if(opening){detailDrift.clear();detailDrift.set(id,initializeDrift({x:0,y:0}));}
+ selected=id;syncSelection();wake();
  $('#experience').classList.add('is-detail');$('.site-header').inert=true;$('#back').hidden=false;$('#participant-select').value=id;
  const data=participantView(p,activeView),view=views.find(v=>v.id===activeView),root=$('#details');root.hidden=false;root.replaceChildren();
  const top=text('div','','detail-top'),title=text('h2',p.id);title.id='detail-title';const close=text('button','×');close.setAttribute('aria-label','Volver a la red');close.onclick=closeDetail;top.append(title,close);
@@ -136,19 +149,37 @@ function addQuestion(container,q,name){
  const label=text('label',q.question,'period-content'),input=document.createElement('textarea');input.name=name;input.rows=2;input.maxLength=1200;if(q.list)input.placeholder='Separa los elementos con punto y coma o en líneas distintas';label.append(input);container.append(label);
 }
 periods.forEach((period,i)=>{
- const row=document.createElement('fieldset');row.className='period-row';row.append(text('legend',period));
- for(const [key,label,options] of [['lived','¿Viviste esta época?',[['','Selecciona'],['si','Sí'],['no','No']]],['recall','¿Cómo la recuerdas?',[['','Selecciona'],['claro','Con recuerdos propios claros'],['parcial','Con recuerdos propios parciales'],['no','No la recuerdo / no lo sé']]]]){
-  const field=text('label',label),select=document.createElement('select');select.name=key+i;select.required=true;options.forEach(([v,l])=>select.add(new Option(l,v)));field.append(select);row.append(field);
- }
- const lived=row.querySelector('[name="lived'+i+'"]'),recall=row.querySelector('[name="recall'+i+'"]');lived.onchange=()=>{recall.disabled=lived.value==='no';recall.required=!recall.disabled;};
- for(const q of periodQuestions)addQuestion(row,q,q.key+i);
- addQuestion(row,{question:'Resume tus referentes en hasta 12 keywords (nombres, objetos o conceptos separados por comas). Son las que compararemos con otras memorias.'},'keywords'+i);
- $('#period-fields').append(row);
+ const fold=document.createElement('details');fold.className='period-fold';fold.open=i===0;
+ fold.append(text('summary',period));
+ const row=text('div','','period-row'),field=text('label','¿Qué relación tienes con esta época?'),select=document.createElement('select');select.required=true;select.name='memoryChoice'+i;
+ for(const [value,label] of [['','Elige una opción'],['claro','La viví y la recuerdo'],['parcial','La viví y recuerdo fragmentos'],['no','La viví, pero no la recuerdo'],['mediada','No la viví; la conozco por otros']])select.add(new Option(label,value));
+ const lived=document.createElement('input'),recall=document.createElement('input');lived.type=recall.type='hidden';lived.name='lived'+i;recall.name='recall'+i;
+ select.onchange=()=>{lived.value=select.value==='mediada'?'no':'si';recall.value=select.value==='mediada'?'no':select.value;fold.classList.toggle('answered',!!select.value);};
+ field.append(select,lived,recall);row.append(field);
+ addQuestion(row,{question:'Tus referentes · hasta 12 keywords',list:false},'keywords'+i);row.querySelector('[name="keywords'+i+'"]').placeholder='Por ejemplo: radio, cine, metro. Separa con comas.';
+ addQuestion(row,{question:'¿Qué guardarías de esta década?',list:true},'capsule'+i);
+ const extra=document.createElement('details');extra.className='optional-fields';extra.append(text('summary','Añadir recuerdos y matices · opcional'));
+ for(const q of periodQuestions.filter(q=>q.key!=='capsule'))addQuestion(extra,q,q.key+i);
+ row.append(extra);fold.append(row);$('#period-fields').append(fold);
 });
 for(const q of generalQuestions)addQuestion($('#general-fields'),q,q.key);
+// Reveal invalid controls before native validation tries to focus a closed fold.
+$('#add-form').addEventListener('invalid',e=>{let parent=e.target.parentElement;while(parent&&parent!==e.currentTarget){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}},true);
 $('#add-form').elements.year.max=new Date().getFullYear();$('#open-add').onclick=()=>$('#add-dialog').showModal();$('#close-add').onclick=()=>$('#add-dialog').close();$('#add-form').onsubmit=e=>{
  e.preventDefault();let p;
  try{p=participantFromForm(new FormData(e.target),'D-'+String(participants.filter(p=>p.synthetic).length+1).padStart(3,'0'));}catch(error){$('#form-error').textContent=error.message;return;}
  participants.push(p);render();if(selected)closeDetail();$('#add-dialog').close();sceneDirty=true;wake();e.target.reset();e.target.querySelectorAll('select').forEach(s=>{s.disabled=false;s.required=true;});$('#form-error').textContent='';$('#announcement').textContent='Memoria '+p.id+' incorporada a la red.';
 };
+// A white difference-blended dot reads black on white and white on black.
+// Each modal needs its own dot because dialogs occupy the browser's top layer.
+const pointerMedia=matchMedia('(hover:hover) and (pointer:fine)');
+const cursors=[document.body,...document.querySelectorAll('dialog')].map(host=>{const dot=text('span','','negative-cursor');dot.setAttribute('aria-hidden','true');host.append(dot);return dot;});
+document.addEventListener('pointermove',e=>{
+ if(!pointerMedia.matches||e.pointerType==='touch')return;
+ const modal=document.querySelector('dialog[open]'),host=modal||document.body;
+ document.documentElement.classList.add('custom-pointer');
+ for(const dot of cursors){const active=dot.parentElement===host;dot.hidden=!active;if(active){dot.style.left=e.clientX+'px';dot.style.top=e.clientY+'px';dot.classList.toggle('over-control',!!e.target.closest('button,a,summary,select,.node,.filter-row'));}}
+},{passive:true});
+function hidePointer(){document.documentElement.classList.remove('custom-pointer');cursors.forEach(dot=>dot.hidden=true);}
+document.addEventListener('pointerout',e=>{if(!e.relatedTarget)hidePointer();});window.addEventListener('blur',hidePointer);pointerMedia.addEventListener('change',hidePointer);cursors.forEach(dot=>dot.hidden=true);
 render();resizeScene();wake();

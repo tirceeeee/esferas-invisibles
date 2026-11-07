@@ -58,10 +58,10 @@ export function createConnectionLayer(canvas){
  const ctx=canvas.getContext('2d'),sampler=createWaveSampler();
  let width=0,height=0,ratio=1,scale=1,offsetX=0,offsetY=0;
  return {
-  resize(w,h,dpr=1){
+  resize(w,h,dpr=1,viewWidth=1512,viewHeight=874){
    width=w;height=h;ratio=2; // Supersample even on 1x screens to prevent thin-edge shimmer.
    canvas.width=Math.max(1,Math.round(w*ratio));canvas.height=Math.max(1,Math.round(h*ratio));
-   scale=Math.min(w/1512,h/874);offsetX=(w-1512*scale)/2;offsetY=(h-874*scale)/2;
+   scale=Math.min(w/viewWidth,h/viewHeight);offsetX=(w-viewWidth*scale)/2;offsetY=(h-viewHeight*scale)/2;
   },
   draw(edges,positions,clock,profile){
    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);

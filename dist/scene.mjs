@@ -8,11 +8,11 @@ export const sphereStyles = {
 };
 // Original transparent artwork. Align its visible centre, preserving the previous core diameter.
 const generationSprites = {
- silent: {file:'silent.png',width:350,height:382,cx:167,cy:167,coreWidth:202},
- boomer: {file:'boomer.png',width:303,height:300,cx:149,cy:156.5,coreWidth:139},
- gen_x: {file:'gen-x.png',width:234,height:233,cx:108.5,cy:117.5,coreWidth:109},
- millennial: {file:'millennial.png',width:190,height:177,cx:96.5,cy:91.5,coreWidth:83},
- gen_z: {file:'gen-z.png',width:116,height:115,cx:59.5,cy:56.5,coreWidth:61},
+ silent: {file:'silent.png',width:348,height:385,cx:172,cy:171,coreWidth:202},
+ boomer: {file:'boomer.png',width:302,height:295,cx:147,cy:144.5,coreWidth:139},
+ gen_x: {file:'gen-x.png',width:241,height:234,cx:112.5,cy:116.5,coreWidth:109},
+ millennial: {file:'millennial.png',width:176,height:176,cx:84.5,cy:89.5,coreWidth:83},
+ gen_z: {file:'gen-z.png',width:116,height:110,cx:58.5,cy:51.5,coreWidth:61},
 };
 export function spriteAttributes(generation){
  const sprite=generationSprites[generation],scale=sphereStyles[generation].width*.194/sprite.coreWidth;
@@ -20,3 +20,15 @@ export function spriteAttributes(generation){
 }
 export function initialPosition(index,total=20){const angle=index*2.39996,r=Math.sqrt((index+.5)/Math.max(total,index+1));return {x:800+Math.cos(angle)*550*r,y:440+Math.sin(angle)*300*r};}
 export function focusTarget(style,mobile=false){return mobile?{x:756,y:730,scale:1100/style.width}:{x:379,y:434,scale:700.227/style.width};}
+export function responsiveLayout(width,height,compact=false){
+ const viewHeight=compact?1512*Math.max(1,height)/Math.max(1,width):874;
+ return {compact,width:1512,height:viewHeight,pixelScale:Math.min(width/1512,height/viewHeight)};
+}
+export function networkTarget(position,layout){
+ if(!layout.compact)return {x:position.x,y:position.y,scale:1};
+ return {x:756+(position.x-800)*.98,y:layout.height/2+(position.y-440)*layout.height/760,scale:Math.min(2.8,Math.max(1.2,.6/layout.pixelScale))};
+}
+export function responsiveFocus(style,layout){
+ if(!layout.compact)return focusTarget(style);
+ return {x:756,y:layout.height/2,scale:Math.min(120,layout.pixelScale*1512*.28)/(style.width*.194*layout.pixelScale)};
+}

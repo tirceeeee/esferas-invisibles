@@ -7,6 +7,13 @@ import {generations,periods,views,participantView,networkFor} from './domain.mjs
 import {linePhase} from './motion.mjs';
 import {sphereStyles,spriteAttributes,initialPosition,responsiveLayout,networkTarget,responsiveFocus} from './scene.mjs';
 const $=s=>document.querySelector(s),svgNS='http://www.w3.org/2000/svg';
+const menuMedia=matchMedia('(max-width:900px)');
+function setMenu(open){$('#menu-toggle').setAttribute('aria-expanded',String(open));$('#site-navigation').hidden=menuMedia.matches&&!open;}
+$('#menu-toggle').onclick=()=>setMenu($('#menu-toggle').getAttribute('aria-expanded')!=='true');
+$('#site-navigation').addEventListener('click',()=>setMenu(false));
+document.addEventListener('click',e=>{if(!e.target.closest('.site-menu'))setMenu(false);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#menu-toggle').getAttribute('aria-expanded')==='true'){setMenu(false);$('#menu-toggle').focus();}});
+menuMedia.addEventListener('change',()=>setMenu(false));setMenu(false);
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)'),mobile=matchMedia('(max-width:900px)');
 let sceneLayout=responsiveLayout(innerWidth,innerHeight,mobile.matches);
 let participants=structuredClone(initialParticipants),activeView='general',selected=null,paused=reducedMotion.matches,visible=participants,links=[];

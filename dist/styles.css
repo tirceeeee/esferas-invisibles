@@ -81,3 +81,35 @@ dialog[open]{animation:dialog-appear .3s ease-out}
  -webkit-backdrop-filter:blur(10px);
  backdrop-filter:blur(10px);
 }
+/* Figma title, node 17:81: editable type with the original exclusion artwork. */
+.site-header #home{position:relative;display:block;flex:0 0 216px;width:216px;max-width:none;height:44px;font:400 20px/24px 'Fira Mono',monospace;color:#000}
+.site-header #home span{display:block;margin:0;position:absolute;left:0;top:10px;white-space:nowrap}
+.site-header #home .title-sphere{position:absolute;left:8px;top:-30px;width:170px;height:104.234px;object-fit:cover;mix-blend-mode:exclusion;pointer-events:none}
+@media(max-width:900px){.site-header #home{margin-top:16px;margin-bottom:16px}}
+.site-header #home::before{content:'';position:absolute;left:8px;top:-30px;width:170px;height:104.234px;background:#fff;pointer-events:none}
+.site-header #home{font-family:'Cutive Mono',monospace}
+#menu-toggle{display:none}.site-menu{position:relative}
+@media(max-width:900px){
+ .site-header{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px}
+ .site-header #home{flex:none;margin:16px 0;width:216px;text-align:center}
+ .site-header #home span{width:100%;text-align:center}
+ #menu-toggle{display:flex;align-items:center;justify-content:center;gap:12px;min-width:100px}
+ #menu-toggle span{transition:rotate .2s}#menu-toggle[aria-expanded=true] span{rotate:180deg}
+ .site-header #site-navigation{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;width:200px;padding:8px;gap:6px;margin:0;border:1px solid #ddd;border-radius:22px;background:#fffffff2;box-shadow:0 10px 30px #00000012;backdrop-filter:blur(12px);animation:dialog-appear .2s ease-out}
+ .site-header #site-navigation button{width:100%;min-height:44px;font-size:13px}
+}
+/* Blend the title artwork without a rectangular backdrop. */
+.site-header #home::before{content:none}
+.site-header #home .title-sphere{filter:invert(1);mix-blend-mode:multiply;mask-image:radial-gradient(ellipse at center,#000 32%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at center,#000 32%,transparent 70%)}
+@media(max-width:900px){
+ .site-header{position:relative;top:auto;left:auto;right:auto;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:0}
+ .site-header #home{grid-column:2;grid-row:1;justify-self:center;width:216px;margin:16px 0}
+ .site-header .site-menu{grid-column:3;grid-row:1;justify-self:end}
+ .site-header #menu-toggle{width:44px;height:44px;min-width:44px;padding:11px;display:flex;flex-direction:column;gap:5px;background:transparent;box-shadow:none;border-radius:12px}
+ #menu-toggle span{display:block;width:22px;height:1px;background:currentColor;rotate:0!important;transition:transform .2s,opacity .2s}
+ #menu-toggle[aria-expanded=true] span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+ #menu-toggle[aria-expanded=true] span:nth-child(2){opacity:0}
+ #menu-toggle[aria-expanded=true] span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+ .site-header #site-navigation{left:auto;right:0;transform:none}
+}
+@media(max-width:360px){.site-header #home{width:190px;font-size:18px}.site-header #home .title-sphere{left:0;width:160px}}

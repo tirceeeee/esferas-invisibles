@@ -6,9 +6,9 @@ import {periodQuestions,generalQuestions,participantFromForm} from '../dist/ques
 import {participantView,networkFor,periodIds,views,opacity} from '../dist/domain.mjs';
 import {soundMotion} from '../dist/sound-motion.mjs';
 
-test('ocho entrevistas anónimas y cuatro ejemplos diferenciados con cuatro épocas',()=>{
- assert.equal(interviewParticipants.length,8);assert.equal(fictionalParticipants.length,4);
- assert.equal(new Set(initialParticipants.map(p=>p.id)).size,12);
+test('diez entrevistas anónimas y cuatro ejemplos diferenciados con cuatro épocas',()=>{
+ assert.equal(interviewParticipants.length,10);assert.equal(fictionalParticipants.length,4);
+ assert.equal(new Set(initialParticipants.map(p=>p.id)).size,14);
  assert.equal(interviewParticipants.find(p=>p.id==='R-006').generation,'gen_x');
  for(const p of initialParticipants){
   assert.equal(p.synthetic,p.id.startsWith('D-'));
@@ -16,12 +16,34 @@ test('ocho entrevistas anónimas y cuatro ejemplos diferenciados con cuatro épo
   assert.deepEqual(Object.keys(p.periodData),periodIds);
   for(const id of periodIds){const d=p.periodData[id];assert.ok(d.keywords.every(k=>typeof k==='string'));assert.ok(['directa','parcial','mediada','pendiente'].includes(d.memory));}
  }
- for(const view of views){const g=networkFor(initialParticipants,view.id);assert.equal(g.edges.length,66);for(const edge of g.edges)assert.equal(edge.opacity,opacity(edge.count));}
+ for(const view of views){const g=networkFor(initialParticipants,view.id);assert.equal(g.edges.length,91);for(const edge of g.edges)assert.equal(edge.opacity,opacity(edge.count));}
  assert.deepEqual(participantView(interviewParticipants[3],'p90').capsule,[]);
  assert.match(participantView(interviewParticipants[1],'p00').memoryEvidence,/revisable/);
 });
 
+test('la nueva entrevista Z conserva los recuerdos recibidos sin inventar respuestas',()=>{
+ const p=interviewParticipants.find(p=>p.id==='R-009');
+ assert.equal(p.generation,'gen_z');
+ assert.deepEqual(periodIds.map(id=>p.periodData[id].memory),['mediada','mediada','mediada','directa']);
+ assert.deepEqual(participantView(p,'general').memory,{directa:25,parcial:0,mediada:75});
+ assert.equal(p.capsule.length,5);
+ for(const id of periodIds)assert.equal(p.periodData[id].objects,'');
+ assert.deepEqual(p.periodData.p90.events,[]);
+ assert.ok(participantView(p,'p00').keywords.includes('wii'));
+});
+
 function form(){const f=new FormData();f.set('year','1985');f.set('capsule','Casete; Fotografía');for(let i=0;i<4;i++){f.set('lived'+i,'si');f.set('recall'+i,i<2?'parcial':'claro');f.set('keywords'+i,'VHS, cinta VHS, radio');for(const q of periodQuestions)f.set(q.key+i,q.list?'Elemento A; Elemento B':'Respuesta '+q.key+' '+i);}for(const q of generalQuestions)f.set(q.key,'General '+q.key);return f;}
+
+test('la entrevista X respeta la memoria parcial declarada y sus cuatro cápsulas',()=>{
+ const p=interviewParticipants.find(p=>p.id==='R-010');
+ assert.equal(p.generation,'gen_x');
+ assert.deepEqual(periodIds.map(id=>p.periodData[id].memory),['parcial','directa','directa','directa']);
+ assert.deepEqual(participantView(p,'general').memory,{directa:75,parcial:25,mediada:0});
+ assert.equal(p.capsule.length,5);
+ assert.deepEqual(participantView(p,'p80').capsule,['Música','Cine','Teatro']);
+ assert.match(participantView(p,'p10').capsule[0],/derechos/);
+ assert.ok(participantView(p,'p90').keywords.includes('VHS'));
+});
 test('cada respuesta llega a su ficha y permanece aislada por década',()=>{
  const p=participantFromForm(form(),'D-005');assert.equal(p.generation,'millennial');
  for(const [i,id] of periodIds.entries()){

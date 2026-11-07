@@ -19,7 +19,8 @@ export function spriteAttributes(generation){
  return {href:'./assets/generations/'+sprite.file,x:-sprite.cx*scale,y:-sprite.cy*scale,width:sprite.width*scale,height:sprite.height*scale,class:'sphere-art'};
 }
 export function initialPosition(index,total=20){const angle=index*2.39996,r=Math.sqrt((index+.5)/Math.max(total,index+1));return {x:800+Math.cos(angle)*550*r,y:440+Math.sin(angle)*300*r};}
-export function focusTarget(style,mobile=false){return mobile?{x:756,y:730,scale:1100/style.width}:{x:379,y:434,scale:700.227/style.width};}
+// One zoom factor for all generations: preserve their original size hierarchy.
+export function focusTarget(style,mobile=false){return mobile?{x:756,y:730,scale:1100/sphereStyles.silent.width}:{x:379,y:434,scale:700.227/sphereStyles.silent.width};}
 export function responsiveLayout(width,height,compact=false){
  const viewHeight=compact?1512*Math.max(1,height)/Math.max(1,width):874;
  return {compact,width:1512,height:viewHeight,pixelScale:Math.min(width/1512,height/viewHeight)};
@@ -30,5 +31,5 @@ export function networkTarget(position,layout){
 }
 export function responsiveFocus(style,layout){
  if(!layout.compact)return focusTarget(style);
- return {x:756,y:layout.height/2,scale:Math.min(120,layout.pixelScale*1512*.28)/(style.width*.194*layout.pixelScale)};
+ return {x:756,y:layout.height/2,scale:Math.min(120,layout.pixelScale*1512*.28)/(sphereStyles.silent.width*.194*layout.pixelScale)};
 }

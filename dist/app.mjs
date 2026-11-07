@@ -79,13 +79,19 @@ function paint(blend){
  for(const p of visible){
   if(selected&&selected!==p.id)continue;
   const node=nodeElements.get(p.id),a=positions.get(p.id),display=displayPositions.get(p.id),target=selected===p.id?responsiveFocus(sphereStyles[p.generation],sceneLayout):networkTarget(a,sceneLayout);
+  if(selected===p.id){
+   const drift=detailDrift.get(p.id),pixelScale=Math.max(.001,sceneLayout.pixelScale);
+   // Use the network's full random drift, in screen pixels, also on mobile.
+   target.x+=(drift?.x||0)/pixelScale;
+   target.y+=(drift?.y||0)/pixelScale;
+  }
   let changed=false;
   for(const key of ['x','y','scale']){const delta=target[key]-display[key];if(Math.abs(delta)>.001){display[key]+=delta*blend;moving=true;changed=true;}else if(delta!==0){display[key]=target[key];changed=true;}}
   if(changed||!node.hasAttribute('transform'))node.setAttribute('transform',`translate(${display.x},${display.y}) scale(${display.scale})`);
   let spriteTransform=`scale(${a.breath})`;
   if(selected===p.id){
    const t=detailDrift.get(p.id)?.elapsed||0;
-   // Animate the artwork around its own centre, keeping the enlarged node anchored.
+   // Keep uniform breathing while the whole sphere floats around its focus point.
    const breath=Math.sin(t*Math.PI/2.8);
    spriteTransform=`scale(${1+.055*breath})`;
   }

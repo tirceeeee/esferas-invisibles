@@ -31,3 +31,12 @@ test('la adaptación mantiene las coordenadas de escritorio',()=>{
  assert.deepEqual(networkTarget(position,layout),{...position,scale:1});
  assert.deepEqual(responsiveFocus(sphereStyles.silent,layout),focusTarget(sphereStyles.silent));
 });
+
+test('el zoom conserva las proporciones generacionales en móvil y escritorio',()=>{
+ for(const layout of [responsiveLayout(281,210,true),responsiveLayout(721,240,true),responsiveLayout(1440,900)]){
+  const styles=Object.values(sphereStyles);
+  const diameters=styles.map(style=>style.width*.194*responsiveFocus(style,layout).scale*layout.pixelScale);
+  assert.ok(diameters.every((d,i)=>i===0||d<diameters[i-1]));
+  for(let i=0;i<styles.length;i++)assert.ok(Math.abs(diameters[i]/diameters[0]-styles[i].width/styles[0].width)<1e-10);
+ }
+});

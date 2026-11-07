@@ -113,3 +113,17 @@ dialog[open]{animation:dialog-appear .3s ease-out}
  .site-header #site-navigation{left:auto;right:0;transform:none}
 }
 @media(max-width:360px){.site-header #home{width:190px;font-size:18px}.site-header #home .title-sphere{left:0;width:160px}}
+/* Put the lettering above the sphere so it inverts against its actual tones. */
+.site-header #home{isolation:isolate}
+.site-header #home::before{content:'';position:absolute;inset:-30px 0;background:#fff;z-index:0;pointer-events:none}
+.site-header #home .title-sphere{z-index:1;mix-blend-mode:normal}
+.site-header #home span{z-index:2;color:white;mix-blend-mode:difference}
+@media(max-width:900px){
+ .site-header .site-menu{grid-column:1;justify-self:start}
+ .site-header #site-navigation{left:0;right:auto;padding:8px;transform-origin:22px 0;animation:menu-unfold .38s cubic-bezier(.2,.75,.25,1) both;overflow:visible}
+ .site-header #site-navigation button{animation:menu-option .35s ease-out both;animation-delay:.08s}
+ .site-header #site-navigation button+button{animation-delay:.14s}
+}
+@keyframes menu-unfold{from{opacity:0;transform:translateY(-8px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes menu-option{from{opacity:0;translate:0 -4px}to{opacity:1;translate:0 0}}
+.site-header #home::before{width:auto;height:auto;left:0;right:0;top:-30px;bottom:-30px}

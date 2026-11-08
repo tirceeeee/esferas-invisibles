@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Esferas invisibles</title>
+  <defs>
+    <filter id="halo" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+  <circle cx="32" cy="32" r="27" fill="white" fill-opacity=".85"/>
+  <circle cx="32" cy="32" r="22" fill="black" filter="url(#halo)"/>
+  <circle cx="32" cy="32" r="15" fill="white"/>
+</svg>

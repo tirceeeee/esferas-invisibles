@@ -5,7 +5,7 @@ import {networkMotion,connectionDensity} from './sound-motion.mjs';
 import {createConnectionLayer,createWaveSampler} from './connections.mjs';
 import {generations,periods,views,participantView,networkFor} from './domain.mjs';
 import {linePhase} from './motion.mjs';
-import {sphereStyles,spriteAttributes,initialPosition,responsiveLayout,networkTarget,responsiveFocus} from './scene.mjs';
+import {sphereStyles,spriteAttributes,initialPosition,responsiveLayout,networkTarget,responsiveFocus,incorporationPose,incorporationDuration,insertionPosition} from './scene.mjs';
 const $=s=>document.querySelector(s),svgNS='http://www.w3.org/2000/svg';
 const menuMedia=matchMedia('(max-width:900px)');
 function setMenu(open){$('#menu-toggle').setAttribute('aria-expanded',String(open));$('#site-navigation').hidden=menuMedia.matches&&!open;}
@@ -19,6 +19,11 @@ let sceneLayout=responsiveLayout(innerWidth,innerHeight,mobile.matches);
 let participants=structuredClone(initialParticipants),activeView='general',selected=null,paused=reducedMotion.matches,visible=participants,links=[];
 let density=0,motion=networkMotion('general',0,0),waveClock=0,flowClock=0,lastFrame=null,accumulator=0;
 let frame=null,sceneDirty=true;
+let incorporation=null;
+const arrivalNotice=text('div','','arrival-notice');arrivalNotice.hidden=true;arrivalNotice.setAttribute('role','status');
+const arrivalCopy=text('span',''),arrivalOpen=text('button','Ver mi esfera ↗');arrivalOpen.type='button';
+arrivalNotice.append(arrivalCopy,arrivalOpen);$('.map-wrap').append(arrivalNotice);
+arrivalOpen.onclick=()=>{if(arrivalOpen.dataset.id)showDetail(arrivalOpen.dataset.id);};
 const connectionLayer=createConnectionLayer($('#connections'));
 const positions=new Map(),nodeElements=new Map(),displayPositions=new Map();
 const detailDrift=new Map();
@@ -78,7 +83,11 @@ function paint(blend){
  let moving=false;
  for(const p of visible){
   if(selected&&selected!==p.id)continue;
-  const node=nodeElements.get(p.id),a=positions.get(p.id),display=displayPositions.get(p.id),target=selected===p.id?responsiveFocus(sphereStyles[p.generation],sceneLayout):networkTarget(a,sceneLayout);
+  const node=nodeElements.get(p.id),a=positions.get(p.id),display=displayPositions.get(p.id);
+  let target=selected===p.id?responsiveFocus(sphereStyles[p.generation],sceneLayout):networkTarget(a,sceneLayout);
+  if(incorporation&&!selected){
+   target=incorporationPose(target,sceneLayout,incorporation.elapsed,p.id===incorporation.id,networkTarget(positions.get(incorporation.id),sceneLayout));
+  }
   if(selected===p.id){
    const drift=detailDrift.get(p.id),pixelScale=Math.max(.001,sceneLayout.pixelScale);
    // Use the network's full random drift, in screen pixels, also on mobile.
@@ -97,9 +106,16 @@ function paint(blend){
   }
   node.querySelector('.sphere-art').setAttribute('transform',spriteTransform);
   display.radius=sphereStyles[p.generation].width*.097*a.breath*display.scale;
-  node.querySelector('.hit-area').setAttribute('r',sceneLayout.compact&&!selected?Math.max(14,22/(sceneLayout.pixelScale*display.scale)):Math.max(14,sphereStyles[p.generation].width*.12));
+  node.querySelector('.hit-area').setAttribute('r',sceneLayout.compact&&!selected?Math.max(14,22/(sceneLayout.pixelScale*Math.max(.1,display.scale))):Math.max(14,sphereStyles[p.generation].width*.12));
  }
- if(!selected&&(sceneDirty||moving))connectionLayer.draw(links,displayPositions,waveClock,motion);
+ if(!selected&&(sceneDirty||moving)){
+  let drawnLinks=links;
+  if(incorporation){
+   const progress=Math.max(0,Math.min(1,(incorporation.elapsed-.25)/1.2));
+   drawnLinks=links.map(edge=>edge.a===incorporation.id||edge.b===incorporation.id?{...edge,opacity:edge.opacity*progress}:edge);
+  }
+  connectionLayer.draw(drawnLinks,displayPositions,waveClock,motion);
+ }
  sceneDirty=false;return moving;
 }
 function wake(){if(frame===null&&!document.hidden)frame=requestAnimationFrame(tick);}
@@ -111,12 +127,16 @@ function physicsStep(){
  stepFlotation(positions,links);
 }
 function tick(now){
- frame=null;const dt=lastFrame===null?1/60:Math.min((now-lastFrame)/1000,.05);lastFrame=now;
+ frame=null;const elapsed=lastFrame===null?1/60:(now-lastFrame)/1000,dt=Math.min(elapsed,.05);lastFrame=now;
  if(document.hidden){accumulator=0;lastFrame=null;return;}
  const animating=!paused&&!document.querySelector('dialog[open]');
+ if(incorporation&&!document.querySelector('dialog[open]')){
+  incorporation.elapsed+=elapsed;sceneDirty=true;
+  if(incorporation.elapsed>=incorporationDuration||paused||reducedMotion.matches)finishIncorporation();
+ }
  if(animating){accumulator+=dt;while(accumulator>=1/60){physicsStep();accumulator-=1/60;}sceneDirty=true;}else accumulator=0;
  const transitioning=paint(reducedMotion.matches?1:1-Math.exp(-dt*7));
- if(animating||transitioning)wake();else lastFrame=null;
+ if(animating||transitioning||incorporation)wake();else lastFrame=null;
 }
 const resizeScene=()=>{const bounds=$('.map-wrap').getBoundingClientRect();sceneLayout=responsiveLayout(bounds.width,bounds.height,mobile.matches);$('#graph').setAttribute('viewBox',`0 0 ${sceneLayout.width} ${sceneLayout.height}`);connectionLayer.resize(bounds.width,bounds.height,devicePixelRatio,sceneLayout.width,sceneLayout.height);sceneDirty=true;paint(1);wake();};
 new ResizeObserver(resizeScene).observe($('.map-wrap'));
@@ -125,6 +145,7 @@ document.addEventListener('visibilitychange',()=>{lastFrame=null;accumulator=0;i
 for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('close',wake);
 function closeDetail(){const previous=selected;selected=null;$('#experience').classList.remove('is-detail');$('#details').hidden=true;$('#back').hidden=true;$('.site-header').inert=false;$('#participant-select').value='';syncSelection();sceneDirty=true;wake();paint(reducedMotion.matches?1:0);nodeElements.get(previous)?.focus({preventScroll:true});}
 function showDetail(id,moveFocus=true){
+ incorporation=null;arrivalNotice.hidden=true;
  const p=visible.find(v=>v.id===id);if(!p)return;const opening=selected!==id;
  if(opening){detailDrift.clear();detailDrift.set(id,initializeDrift({x:0,y:0}));}
  selected=id;syncSelection();wake();
@@ -180,9 +201,33 @@ for(const q of generalQuestions)addQuestion($('#general-fields'),q,q.key);
 $('#add-form').addEventListener('invalid',e=>{let parent=e.target.parentElement;while(parent&&parent!==e.currentTarget){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement;}},true);
 $('#add-form').elements.year.max=new Date().getFullYear();$('#open-add').onclick=()=>$('#add-dialog').showModal();$('#close-add').onclick=()=>$('#add-dialog').close();$('#add-form').onsubmit=e=>{
  e.preventDefault();let p;
- try{p=participantFromForm(new FormData(e.target),'D-'+String(participants.filter(p=>p.synthetic).length+1).padStart(3,'0'));}catch(error){$('#form-error').textContent=error.message;return;}
- participants.push(p);render();if(selected)closeDetail();$('#add-dialog').close();sceneDirty=true;wake();e.target.reset();e.target.querySelectorAll('select').forEach(s=>{s.disabled=false;s.required=true;});$('#form-error').textContent='';$('#announcement').textContent='Memoria '+p.id+' incorporada a la red.';
+ try{p=participantFromForm(new FormData(e.target),'D-'+String(Math.max(4,...participants.filter(p=>p.synthetic).map(p=>Number(p.id.slice(2))))+1).padStart(3,'0'));}catch(error){$('#form-error').textContent=error.message;return;}
+ if(selected)closeDetail();
+ startArrival(p);
+ $('#add-dialog').close();hidePointer();nodeElements.get(p.id).focus({preventScroll:true});$('.map-wrap').scrollIntoView({block:'nearest',behavior:'instant'});
+ e.target.reset();e.target.querySelectorAll('select').forEach(s=>{s.disabled=false;s.required=true;});$('#form-error').textContent='';$('#announcement').textContent='Memoria '+p.id+' incorporada a la red.';
 };
+function rearrange(people){
+ // Recompute resting places only on incorporation, keeping each sphere's drift phase.
+ people.forEach((person,i)=>{const a=positions.get(person.id),next=initialPosition(i,people.length);a.x+=next.x-a.anchorX;a.y+=next.y-a.anchorY;a.anchorX=next.x;a.anchorY=next.y;});
+}
+function startArrival(p){
+ if(!participants.some(person=>person.id===p.id))participants.push(p);
+ render();rearrange(participants);
+ const destination=insertionPosition([...positions].filter(([id])=>id!==p.id).map(([,point])=>point));
+ const arriving=positions.get(p.id);
+ arriving.x=arriving.anchorX=destination.x;arriving.y=arriving.anchorY=destination.y;
+ arriving.elapsed=0;arriving.vx=arriving.vy=0;
+ const animate=!reducedMotion.matches&&!paused;
+ incorporation=animate?{id:p.id,elapsed:0}:null;
+ if(animate){Object.assign(displayPositions.get(p.id),networkTarget(positions.get(p.id),sceneLayout),{scale:0});nodeElements.get(p.id).removeAttribute('transform');}
+ arrivalCopy.textContent=animate?'Tu esfera se está conectando a la red…':'Tu esfera ya forma parte de la red.';
+ arrivalOpen.dataset.id=p.id;arrivalOpen.hidden=false;arrivalNotice.hidden=false;
+ sceneDirty=true;paint(animate?0:1);wake();
+}
+function finishIncorporation(){
+ incorporation=null;arrivalCopy.textContent='Tu esfera ya forma parte de la red.';
+}
 // A white difference-blended dot reads black on white and white on black.
 // Each modal needs its own dot because dialogs occupy the browser's top layer.
 const pointerMedia=matchMedia('(hover:hover) and (pointer:fine)');

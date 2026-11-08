@@ -33,3 +33,25 @@ export function responsiveFocus(style,layout){
  if(!layout.compact)return focusTarget(style);
  return {x:756,y:layout.height/2,scale:Math.min(120,layout.pixelScale*1512*.28)/(sphereStyles.silent.width*.194*layout.pixelScale)};
 }
+
+export const incorporationDuration=3.6;
+// Pick one of the roomiest areas, rather than always spawning at the same point.
+export function insertionPosition(occupied,random=Math.random){
+ const candidates=Array.from({length:64},(_,i)=>{
+  const point=initialPosition(i,64);
+  const clearance=occupied.length?Math.min(...occupied.map(p=>Math.hypot(point.x-p.x,point.y-p.y))):1;
+  return {...point,clearance};
+ }).sort((a,b)=>b.clearance-a.clearance);
+ const roomy=candidates.filter(p=>p.clearance>=candidates[0].clearance*.85).slice(0,8);
+ const chosen=roomy[Math.min(roomy.length-1,Math.floor(random()*roomy.length))];
+ return {x:chosen.x,y:chosen.y};
+}
+export function incorporationPose(target,layout,elapsed,isNew,origin={x:layout.width/2,y:layout.height/2}){
+ const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+ if(isNew){
+  return {...target,scale:target.scale*ease(elapsed/.9)};
+ }
+ const dx=target.x-origin.x,dy=target.y-origin.y,distance=Math.max(1,Math.hypot(dx,dy));
+ const wave=Math.sin(Math.PI*ease(elapsed/incorporationDuration))*55*Math.exp(-distance/1000);
+ return {...target,x:target.x+dx/distance*wave,y:target.y+dy/distance*wave};
+}

@@ -127,3 +127,8 @@ dialog[open]{animation:dialog-appear .3s ease-out}
 @keyframes menu-unfold{from{opacity:0;transform:translateY(-8px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes menu-option{from{opacity:0;translate:0 -4px}to{opacity:1;translate:0 0}}
 .site-header #home::before{width:auto;height:auto;left:0;right:0;top:-30px;bottom:-30px}
+.arrival-notice{position:absolute;z-index:2;top:12%;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:10px 16px;border:1px solid #e3e3e3;border-radius:24px;background:#fffffff0;box-shadow:0 4px 24px #00000008;font-size:13px;width:max-content;max-width:calc(100% - 24px);text-align:center}
+.arrival-notice button{white-space:nowrap;font-size:12px;padding:8px 12px}
+@media(max-width:900px){.arrival-notice{top:0;flex-direction:column;gap:4px;padding:10px 14px;font-size:12px}}
+.map-controls{opacity:1;flex-wrap:wrap}
+@media(max-width:900px){.map-controls{justify-content:center}}
